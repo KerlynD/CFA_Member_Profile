@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function Login() {
+export default function Layout() {
   const handleLogin = () => {
     window.location.href = "http://localhost:8080/api/auth/google/login";
   };

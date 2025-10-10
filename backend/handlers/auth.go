@@ -35,7 +35,7 @@ func InitOAuth() {
 }
 
 func GoogleLogin(c *fiber.Ctx) error {
-	// Redirect user to Google Login
+	// Redirect user to Google Layout
 	url := googleOAuthConfig.AuthCodeURL("randomstate", oauth2.AccessTypeOffline)
 	return c.Redirect(url)
 }

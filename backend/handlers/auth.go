@@ -100,3 +100,18 @@ func GoogleCallback(c *fiber.Ctx) error {
 
 	return c.Redirect("http://localhost:3000") // Redirect to the frontend
 }
+
+func Logout(c *fiber.Ctx) error {
+	/*
+		Logs out the user
+		Removes the JWT from the cookie
+	*/
+	c.Cookie(&fiber.Cookie{
+		Name:     "session",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		HTTPOnly: true,
+		Secure:   false,
+	})
+	return c.JSON(fiber.Map{"message": "Logged out successfully"})
+	}

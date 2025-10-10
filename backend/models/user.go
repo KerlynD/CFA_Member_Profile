@@ -7,6 +7,7 @@ type User struct {
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 	Picture   string `json:"picture"`
+	IsAdmin   bool   `json:"is_admin"` // for admin access
 	School    string `json:"school"`
 	Headline  string `json:"headline"`
 	Location  string `json:"location"`

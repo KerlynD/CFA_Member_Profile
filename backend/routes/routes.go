@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/KerlynD/CFA_Member_Profile/backend/handlers"
+	"github.com/KerlynD/CFA_Member_Profile/backend/middleware"
 )
 
 func RegisterRoutes(app *fiber.App) {
@@ -10,15 +11,18 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/api/auth/google/login", handlers.GoogleLogin)
 	app.Get("/api/auth/google/callback", handlers.GoogleCallback)
 
-	// Users
+	// Public endpoints
 	app.Get("/api/users", handlers.GetUsers)
-	app.Put("/api/users/:id", handlers.UpdateUser)
-
-	// Offers
 	app.Get("/api/offers", handlers.GetOffers)
-	app.Post("/api/offers", handlers.AddOffer)
-
-	// Events
 	app.Get("/api/events", handlers.GetEvents)
-	app.Post("/api/events", handlers.AddEvent)
+
+	// Protected endpoints
+	auth := app.Group("/api", middleware.RequireAuth)
+
+	auth.Put("/users/:id", handlers.UpdateUser)
+	auth.Post("/offers", handlers.AddOffer)
+
+	// Admin-only routes
+	admin := app.Group("/api/admin", middleware.RequireAuth, middleware.RequireAdmin)
+	admin.Post("/events", handlers.AddEvent)
 }

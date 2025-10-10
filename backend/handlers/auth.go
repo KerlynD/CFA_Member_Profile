@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/KerlynD/CFA_Member_Profile/backend/db"
+	"github.com/KerlynD/CFA_Member_Profile/backend/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
@@ -65,15 +67,36 @@ func GoogleCallback(c *fiber.Ctx) error {
 	name := userData["name"].(string)
 	picture := userData["picture"].(string)
 
-	_, err = db.Pool.Exec(context.Background(), `
-	INSERT INTO users (google_id, name, email, picture)
-	VALUES ($1, $2, $3, $4)
-	ON CONFLICT (email) DO NOTHING
-	`, googleID, name, email, picture)
+	var userID int
+	var isAdmin bool
+
+	// Get existing user or insert if not exists
+	err = db.Pool.QueryRow(context.Background(),
+		`INSERT INTO users (google_id, name, email, picture)
+		 VALUES ($1, $2, $3, $4)
+		 ON CONFLICT (email) DO UPDATE SET google_id=$1
+		 RETURNING id, is_admin`,
+		googleID, name, email, picture,
+	).Scan(&userID, &isAdmin)
 
 	if err != nil {
 		return c.Status(500).SendString("Database error: " + err.Error())
 	}
+
+	// Generate JWT
+	jwtToken, err := utils.GenerateJWT(userID, email, isAdmin)
+	if err != nil {
+		return c.Status(500).SendString("Failed to create JWT")
+	}
+
+	// Send JWT as cookie 
+	c.Cookie(&fiber.Cookie{
+		Name:     "session",
+		Value:    jwtToken,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HTTPOnly: true,
+		Secure:   false, 
+	})
 
 	return c.Redirect("http://localhost:3000") // Redirect to the frontend
 }

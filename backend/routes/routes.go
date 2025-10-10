@@ -23,7 +23,10 @@ func RegisterRoutes(app *fiber.App) {
 
 	auth.Get("/me", handlers.GetCurrentUser)
 	auth.Put("/users/:id", handlers.UpdateUser)
+	auth.Put("/users/me", handlers.UpdateMyProfile)
 	auth.Post("/offers", handlers.AddOffer)
+	auth.Post("/work_history", handlers.AddWorkHistory)
+	auth.Get("/work_history", handlers.GetWorkHistory)
 
 	// Admin-only routes
 	admin := app.Group("/api/admin", middleware.RequireAuth, middleware.RequireAdmin)

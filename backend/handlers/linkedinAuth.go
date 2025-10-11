@@ -100,6 +100,90 @@ func getCompanyLogoURL(companyName string) string {
 	return fmt.Sprintf("https://logo.clearbit.com/%s.com", cleanName)
 }
 
+func getSchoolLogoURL(schoolName string) string {
+	/*
+		Returns a Clearbit logo URL for a given school name
+		Uses a lookup map for well-known schools
+		Fallback: tries lowercase name with .edu
+	*/
+
+	// Simple domain inference for well-known schools
+	lookup := map[string]string{
+		"Queens College":                        "qc.cuny.edu",
+		"Columbia University":                   "columbia.edu",
+		"Harvard University":                    "harvard.edu",
+		"MIT":                                   "mit.edu",
+		"Massachusetts Institute of Technology": "mit.edu",
+		"Stanford University":                   "stanford.edu",
+		"Yale University":                       "yale.edu",
+		"Princeton University":                  "princeton.edu",
+		"University of Pennsylvania":            "upenn.edu",
+		"Cornell University":                    "cornell.edu",
+		"Brown University":                      "brown.edu",
+		"Dartmouth College":                     "dartmouth.edu",
+		"Duke University":                       "duke.edu",
+		"Northwestern University":               "northwestern.edu",
+		"University of Chicago":                 "uchicago.edu",
+		"Caltech":                               "caltech.edu",
+		"California Institute of Technology":    "caltech.edu",
+		"UC Berkeley":                           "berkeley.edu",
+		"University of California, Berkeley":    "berkeley.edu",
+		"UCLA":                                  "ucla.edu",
+		"University of California, Los Angeles": "ucla.edu",
+		"NYU":                                   "nyu.edu",
+		"New York University":                   "nyu.edu",
+		"University of Michigan":                "umich.edu",
+		"Georgia Tech":                          "gatech.edu",
+		"Carnegie Mellon University":            "cmu.edu",
+		"University of Texas at Austin":         "utexas.edu",
+		"University of Virginia":                "virginia.edu",
+		"Boston University":                     "bu.edu",
+		"Georgetown University":                 "georgetown.edu",
+		"Emory University":                      "emory.edu",
+		"Vanderbilt University":                 "vanderbilt.edu",
+		"Rice University":                       "rice.edu",
+		"University of Southern California":     "usc.edu",
+		"USC":                                   "usc.edu",
+	}
+
+	if domain, ok := lookup[schoolName]; ok {
+		return fmt.Sprintf("https://logo.clearbit.com/%s", domain)
+	}
+
+	// Fallback: try lowercase name with .edu
+	cleanName := strings.ReplaceAll(strings.ToLower(schoolName), " ", "")
+	return fmt.Sprintf("https://logo.clearbit.com/%s.edu", cleanName)
+}
+
+func safeString(data map[string]interface{}, keys ...string) string {
+	/*
+		Safely extracts nested string values from a map
+		Returns empty string if key doesn't exist or value is not a string
+	*/
+
+	current := data
+	for i, key := range keys {
+		if i == len(keys)-1 {
+			// Last key - extract string value
+			if val, ok := current[key].(string); ok {
+				return val
+			}
+			// Try numeric conversion for year fields
+			if val, ok := current[key].(float64); ok {
+				return fmt.Sprintf("%.0f", val)
+			}
+			return ""
+		}
+		// Navigate deeper into nested map
+		if next, ok := current[key].(map[string]interface{}); ok {
+			current = next
+		} else {
+			return ""
+		}
+	}
+	return ""
+}
+
 func LinkedInLogin(c *fiber.Ctx) error {
 	// Redirect user to LinkedIn Login
 	url := linkedinOAuthConfig.AuthCodeURL("randomstate", oauth2.AccessTypeOffline)
@@ -113,7 +197,7 @@ func LinkedInCallback(c *fiber.Ctx) error {
 		Gets the user info from LinkedIn
 		Creates/updates user in database
 		Generates a JWT and sets it as a cookie
-		Syncs work history from LinkedIn profile
+		Syncs work history and education from LinkedIn profile
 		Redirects to the frontend
 	*/
 
@@ -254,6 +338,51 @@ func LinkedInCallback(c *fiber.Ctx) error {
 
 				if err != nil {
 					fmt.Println("Failed to insert work history:", err)
+				}
+			}
+		}
+	}
+
+	// Fetch LinkedIn education history
+	eduReq, _ := http.NewRequest("GET", "https://api.linkedin.com/v2/education", nil)
+	eduReq.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	eduResp, err := http.DefaultClient.Do(eduReq)
+
+	if err != nil {
+		log.Println("Failed to get education from LinkedIn: ", err)
+	} else {
+		defer eduResp.Body.Close()
+
+		var eduData map[string]interface{}
+		json.NewDecoder(eduResp.Body).Decode(&eduData)
+
+		// Loop through education and insert into education_history
+		if schools, ok := eduData["values"].([]interface{}); ok {
+			for _, s := range schools {
+				school, ok := s.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				// Safely extract education details
+				schoolName := safeString(school, "schoolName")
+				degree := safeString(school, "degreeName")
+				field := safeString(school, "fieldOfStudy")
+				start := safeString(school, "startDate", "year")
+				end := safeString(school, "endDate", "year")
+
+				// Get school logo URL from Clearbit
+				logo := getSchoolLogoURL(schoolName)
+
+				// Insert education into database with logo
+				_, err := db.Pool.Exec(context.Background(),
+					`INSERT INTO education_history (user_id, school_name, school_logo_url, degree, field_of_study, start_date, end_date)
+					 VALUES ($1, $2, $3, $4, $5, $6, $7)
+					 ON CONFLICT DO NOTHING`,
+					userID, schoolName, logo, degree, field, start, end)
+
+				if err != nil {
+					fmt.Println("Failed to insert education history:", err)
 				}
 			}
 		}

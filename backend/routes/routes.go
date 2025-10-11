@@ -21,12 +21,22 @@ func RegisterRoutes(app *fiber.App) {
 	// Protected endpoints
 	auth := app.Group("/api", middleware.RequireAuth)
 
+	// Profile
 	auth.Get("/me", handlers.GetCurrentUser)
 	auth.Put("/users/:id", handlers.UpdateUser)
 	auth.Put("/users/me", handlers.UpdateMyProfile)
+
+	// Offers
 	auth.Post("/offers", handlers.AddOffer)
+
+	// Work History
 	auth.Post("/work_history", handlers.AddWorkHistory)
 	auth.Get("/work_history", handlers.GetWorkHistory)
+
+	// Education History
+	auth.Get("/education_history", handlers.GetEducationHistory)
+	auth.Post("/education_history", handlers.AddEducationHistory)
+
 
 	// Admin-only routes
 	admin := app.Group("/api/admin", middleware.RequireAuth, middleware.RequireAdmin)

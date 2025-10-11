@@ -7,18 +7,33 @@ import (
 )
 
 func RegisterRoutes(app *fiber.App) {
-	// Auth
+	// --- AUTHENTICATION ---
 	app.Get("/api/auth/google/login", handlers.GoogleLogin)
 	app.Get("/api/auth/google/callback", handlers.GoogleCallback)
-	
 
-	// Public endpoints
-	app.Get("/api/users", handlers.GetUsers)
-	app.Get("/api/offers", handlers.GetOffers)
-	app.Get("/api/events", handlers.GetEvents)
+	// LinkedIn Auth
+	app.Get("/api/auth/linkedin/login", handlers.LinkedInLogin)
+	app.Get("/api/auth/linkedin/callback", handlers.LinkedInCallback)
+
+	// Discord Auth
+	app.Get("/api/auth/discord/login", handlers.DiscordLogin)
+	app.Get("/api/auth/discord/callback", handlers.DiscordCallback)
+
+	// Logout
 	app.Get("/api/logout", handlers.Logout)
 
-	// Protected endpoints
+	// --- PUBLIC ENDPOINTS ---
+
+	// Users
+	app.Get("/api/users", handlers.GetUsers)
+
+	// Offers
+	app.Get("/api/offers", handlers.GetOffers)
+
+	// Events
+	app.Get("/api/events", handlers.GetEvents)
+
+	// --- PROTECTED ENDPOINTS ---
 	auth := app.Group("/api", middleware.RequireAuth)
 
 	// Profile
@@ -26,8 +41,14 @@ func RegisterRoutes(app *fiber.App) {
 	auth.Put("/users/:id", handlers.UpdateUser)
 	auth.Put("/users/me", handlers.UpdateMyProfile)
 
+	// Integrations
+	auth.Get("/integrations", handlers.GetIntegrationsOverview)
+
 	// Offers
 	auth.Post("/offers", handlers.AddOffer)
+
+	// Discord Integration
+	auth.Get("/integrations/discord", handlers.GetDiscordIntegration)
 
 	// Work History
 	auth.Post("/work_history", handlers.AddWorkHistory)
@@ -38,7 +59,7 @@ func RegisterRoutes(app *fiber.App) {
 	auth.Post("/education_history", handlers.AddEducationHistory)
 
 
-	// Admin-only routes
+	// --- ADMIN-ONLY ENDPOINTS ---
 	admin := app.Group("/api/admin", middleware.RequireAuth, middleware.RequireAdmin)
 	admin.Post("/events", handlers.AddEvent)
 }

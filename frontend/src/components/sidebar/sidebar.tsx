@@ -26,7 +26,7 @@ export default function Sidebar() {
     };
 
     return (
-        <aside className="left-0 h-screen w-[270px] flex-col items-start gap-4 overflow-auto border-r border-r-gray-200 p-6 md:flex hidden text-xl">
+        <aside className="left-0 h-screen w-[250px] flex-col items-start gap-4 overflow-auto border-r border-r-gray-200 p-6 md:flex hidden text-xl">
             <p className="p-2">
                 <Image src="/codeforall.svg" alt="Code for All logo" width={20} height={20} style={{ width: 'auto', height: 'auto' }}/>
                 Code for All
@@ -38,6 +38,7 @@ export default function Sidebar() {
                     <li><Link aria-current={ pathname.endsWith("/resources") ? "page" : undefined} className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/resources">  <Image src="/cry-svgrepo-com.svg" alt="Resources icon" width={20} height={20} style={{ width: 'auto', height: 'auto' }}/> Resources</Link></li>
                     <li><Link aria-current={ pathname.endsWith("/leetcodeleaderboard") ? "page" : undefined} className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/leetcodeleaderboard"> <Image src="/cry-svgrepo-com.svg" alt="LeetCode icon" width={20} height={20} style={{ width: 'auto', height: 'auto' }}/>LC Leaderboard</Link></li>
                     <li><Link aria-current={ pathname.endsWith("/profile") ? "page" : undefined} className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/profile">  <Image src="/assets/profile.svg" alt="Profile icon" width={20} height={20} className="flex-shrink-0" style={{ width: '20px', height: '20px' }}/>Profile</Link></li>
+                    <li><Link aria-current={ pathname.endsWith("/events") ? "page" : undefined} className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="events">  <Image src="/cry-svgrepo-com.svg" alt="Cry svgrepo com" width={20} height={20}/>Events</Link></li>
                 </ul>
             </nav>
             <div className="p-2 w-full mt-auto">

@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"github.com/KerlynD/CFA_Member_Profile/backend/handlers"
 	"github.com/KerlynD/CFA_Member_Profile/backend/middleware"
+	"github.com/gofiber/fiber/v2"
 )
 
 func RegisterRoutes(app *fiber.App) {
@@ -36,10 +36,10 @@ func RegisterRoutes(app *fiber.App) {
 	// --- PROTECTED ENDPOINTS ---
 	auth := app.Group("/api", middleware.RequireAuth)
 
-	// Profile
+	// Profile - IMPORTANT: Specific routes must come before parameterized routes
 	auth.Get("/me", handlers.GetCurrentUser)
-	auth.Put("/users/:id", handlers.UpdateUser)
 	auth.Put("/users/me", handlers.UpdateMyProfile)
+	auth.Put("/users/:id", handlers.UpdateUser)
 
 	// Integrations
 	auth.Get("/integrations", handlers.GetIntegrationsOverview)
@@ -57,7 +57,6 @@ func RegisterRoutes(app *fiber.App) {
 	// Education History
 	auth.Get("/education_history", handlers.GetEducationHistory)
 	auth.Post("/education_history", handlers.AddEducationHistory)
-
 
 	// --- ADMIN-ONLY ENDPOINTS ---
 	admin := app.Group("/api/admin", middleware.RequireAuth, middleware.RequireAdmin)

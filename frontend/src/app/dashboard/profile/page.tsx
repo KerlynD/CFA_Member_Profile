@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("general");
   const [showPhotoUrlInput, setShowPhotoUrlInput] = useState(false);
   const [photoUrl, setPhotoUrl] = useState("");
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // Form state for General section
   const [formData, setFormData] = useState({
@@ -109,10 +110,13 @@ export default function ProfilePage() {
       if (res.ok) {
         // Refresh user data
         await fetchUser();
-        alert("Profile updated successfully!");
+        setSuccessMessage("Profile updated successfully!");
+        // Auto-hide after 3 seconds
+        setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         const error = await res.json();
-        alert(`Failed to update profile: ${error.error || "Unknown error"}`);
+        setSuccessMessage(`Error: ${error.error || "Unknown error"}`);
+        setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -373,6 +377,27 @@ export default function ProfilePage() {
                   <p className="text-xs text-gray-400 mt-1">Coming soon</p>
                 </div>
               </div>
+
+              {/* Success Message */}
+              {successMessage && (
+                <div className={`mt-6 p-4 rounded-lg flex items-center gap-2 ${
+                  successMessage.startsWith("Error") 
+                    ? "bg-red-50 text-red-800 border border-red-200" 
+                    : "bg-green-50 text-green-800 border border-green-200"
+                }`}>
+                  {!successMessage.startsWith("Error") && (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {successMessage.startsWith("Error") && (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span className="font-medium">{successMessage}</span>
+                </div>
+              )}
 
               {/* Save Button */}
               <div className="mt-8 flex justify-end">

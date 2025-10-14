@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Code for All - Member Profile",
+  title: "Member Profile",
   description: "Member profile portal for Code for All QC",
   icons: {
     icon: "/assets/codeforall.svg",

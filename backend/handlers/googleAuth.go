@@ -89,16 +89,17 @@ func GoogleCallback(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to create JWT")
 	}
 
-	// Send JWT as cookie 
+	// Send JWT as cookie
 	c.Cookie(&fiber.Cookie{
 		Name:     "session",
 		Value:    jwtToken,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HTTPOnly: true,
-		Secure:   false, 
+		Secure:   false,
+		SameSite: "Lax",
 	})
 
-	return c.Redirect("http://localhost:3000") // Redirect to the frontend
+	return c.Redirect("http://localhost:3000" + "/dashboard") // Redirect to the frontend
 }
 
 func Logout(c *fiber.Ctx) error {
@@ -112,6 +113,7 @@ func Logout(c *fiber.Ctx) error {
 		Expires:  time.Now().Add(-time.Hour),
 		HTTPOnly: true,
 		Secure:   false,
+		SameSite: "Lax",
 	})
 	return c.JSON(fiber.Map{"message": "Logged out successfully"})
-	}
+}

@@ -3,14 +3,14 @@ package middleware
 import (
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/KerlynD/CFA_Member_Profile/backend/utils"
+	"github.com/gofiber/fiber/v2"
 )
 
 // Ensure the user is authenticated
 func RequireAuth(c *fiber.Ctx) error {
 	/*
-		Require Authenticated User 
+		Require Authenticated User
 		Returns a 401 Unauthorized if the user is not authenticated
 	*/
 
@@ -21,11 +21,11 @@ func RequireAuth(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if strings.HasPrefix(authHeader, "Bearer ") {
 			cookie = strings.TrimPrefix(authHeader, "Bearer ")
+		} else {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Unauthorized/No JWT found",
+			})
 		}
-	} else {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized/No JWT found",
-		})
 	}
 
 	// Verify the JWT
@@ -47,7 +47,7 @@ func RequireAuth(c *fiber.Ctx) error {
 // Ensure the user is an admin
 func RequireAdmin(c *fiber.Ctx) error {
 	/*
-		Require Admin User 
+		Require Admin User
 		Returns a 401 Unauthorized if the user is not an admin
 	*/
 	isAdmin := c.Locals("is_admin").(bool)

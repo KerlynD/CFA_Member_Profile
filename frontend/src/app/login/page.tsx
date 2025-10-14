@@ -10,7 +10,7 @@ export default function LoginPage() {
       <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-xl rounded-2xl p-10 max-w-sm w-full">
         <div className="flex flex-col items-center">
           <img
-            src="/favicon.ico"
+            src="/assets/codeforall.svg"
             alt="Code for All Logo"
             className="w-16 h-16 mb-4"
           />

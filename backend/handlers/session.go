@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"context"
-	"github.com/gofiber/fiber/v2"
+	"log"
+
 	"github.com/KerlynD/CFA_Member_Profile/backend/db"
 	"github.com/KerlynD/CFA_Member_Profile/backend/models"
 	"github.com/KerlynD/CFA_Member_Profile/backend/utils"
+	"github.com/gofiber/fiber/v2"
 )
 
 // GET /api/me
@@ -29,20 +31,22 @@ func GetCurrentUser(c *fiber.Ctx) error {
 			"error": "Expired/Invalid JWT",
 		})
 	}
-	
+
 	var user models.User
 
 	err = db.Pool.QueryRow(context.Background(),
 		`SELECT id, name, email, picture, school, headline, location, is_admin FROM users WHERE id = $1`,
 		claims.UserID,
-	).Scan(&user.ID, &user.Name, &user.Email, &user.Picture, 
+	).Scan(&user.ID, &user.Name, &user.Email, &user.Picture,
 		&user.School, &user.Headline, &user.Location, &user.IsAdmin)
 
 	if err != nil {
+		log.Println("Error fetching user from database:", err, "UserID:", claims.UserID)
 		return c.Status(404).JSON(fiber.Map{
-			"error": "User not found",
+			"error":   "User not found",
+			"details": err.Error(),
 		})
 	}
-	
+
 	return c.JSON(user)
 }

@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/KerlynD/CFA_Member_Profile/backend/db"
 	"github.com/KerlynD/CFA_Member_Profile/backend/models"
+	"github.com/gofiber/fiber/v2"
 )
 
 // GET /api/users
@@ -17,7 +17,7 @@ func GetUsers(c *fiber.Ctx) error {
 	*/
 
 	// Query the database for all users
-	rows, err := db.Pool.Query(context.Background(), 
+	rows, err := db.Pool.Query(context.Background(),
 		"SELECT id, google_id, name, email, picture, school, headline, location FROM users ORDER BY name ASC")
 	if err != nil {
 		log.Println("DB Error: ", err)
@@ -32,7 +32,7 @@ func GetUsers(c *fiber.Ctx) error {
 		if err := rows.Scan(&user.ID, &user.GoogleID, &user.Name, &user.Email, &user.Picture, &user.School, &user.Headline, &user.Location); err != nil {
 			log.Println("Scanner Error: ", err)
 			continue
-	}
+		}
 		users = append(users, user)
 	}
 	return c.JSON(users)
@@ -52,9 +52,23 @@ func UpdateUser(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body/JSON"})
 	}
 
-	_, err := db.Pool.Exec(context.Background(), 
+	// Handle nil pointers - use empty string if nil
+	school := ""
+	if body.School != nil {
+		school = *body.School
+	}
+	headline := ""
+	if body.Headline != nil {
+		headline = *body.Headline
+	}
+	location := ""
+	if body.Location != nil {
+		location = *body.Location
+	}
+
+	_, err := db.Pool.Exec(context.Background(),
 		"UPDATE users SET school = $1, headline = $2, location = $3 WHERE id = $4",
-		body.School, body.Headline, body.Location, id)
+		school, headline, location, id)
 
 	if err != nil {
 		log.Println("Internal DB Error: ", err)

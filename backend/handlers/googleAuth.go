@@ -4,6 +4,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -72,16 +73,19 @@ func GoogleCallback(c *fiber.Ctx) error {
 
 	// Get existing user or insert if not exists
 	err = db.Pool.QueryRow(context.Background(),
-		`INSERT INTO users (google_id, name, email, picture)
-		 VALUES ($1, $2, $3, $4)
+		`INSERT INTO users (google_id, name, email, picture, school, headline, location)
+		 VALUES ($1, $2, $3, $4, '', '', '')
 		 ON CONFLICT (email) DO UPDATE SET google_id=$1
 		 RETURNING id, is_admin`,
 		googleID, name, email, picture,
 	).Scan(&userID, &isAdmin)
 
 	if err != nil {
+		log.Println("Database error during user creation/update:", err)
 		return c.Status(500).SendString("Database error: " + err.Error())
 	}
+
+	log.Printf("User logged in: ID=%d, Email=%s, Name=%s, IsAdmin=%v", userID, email, name, isAdmin)
 
 	// Generate JWT
 	jwtToken, err := utils.GenerateJWT(userID, email, isAdmin)

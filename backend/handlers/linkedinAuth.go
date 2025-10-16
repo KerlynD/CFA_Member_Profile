@@ -36,10 +36,15 @@ func InitLinkedinOAuth() {
 
 func getCompanyLogoURL(companyName string) string {
 	/*
-		Returns a Clearbit logo URL for a given company name
+		Returns a logo.dev logo URL for a given company name
 		Uses a lookup map for well-known companies
-		Fallback: tries lowercase name with .com
 	*/
+
+	logoDevToken := os.Getenv("LOGO_KEY")
+	if logoDevToken == "" {
+		log.Println("Warning: LOGO_KEY not set in environment variables")
+		logoDevToken = "YOUR_LOGO_KEY"
+	}
 
 	// Simple domain inference for well-known companies
 	lookup := map[string]string{
@@ -92,20 +97,26 @@ func getCompanyLogoURL(companyName string) string {
 	}
 
 	if domain, ok := lookup[companyName]; ok {
-		return fmt.Sprintf("https://logo.clearbit.com/%s", domain)
+		return fmt.Sprintf("https://img.logo.dev/%s?token=%s", domain, logoDevToken)
 	}
 
 	// Fallback: try lowercase name with .com
 	cleanName := strings.ReplaceAll(strings.ToLower(companyName), " ", "")
-	return fmt.Sprintf("https://logo.clearbit.com/%s.com", cleanName)
+	return fmt.Sprintf("https://img.logo.dev/%s.com?token=%s", cleanName, logoDevToken)
 }
 
 func getSchoolLogoURL(schoolName string) string {
 	/*
-		Returns a Clearbit logo URL for a given school name
+		Returns a logo.dev logo URL for a given school name
 		Uses a lookup map for well-known schools
 		Fallback: tries lowercase name with .edu
 	*/
+
+	logoDevToken := os.Getenv("LOGO_KEY")
+	if logoDevToken == "" {
+		log.Println("Warning: LOGO_KEY not set in environment variables")
+		logoDevToken = "YOUR_LOGO_KEY"
+	}
 
 	// Simple domain inference for well-known schools
 	lookup := map[string]string{
@@ -147,12 +158,12 @@ func getSchoolLogoURL(schoolName string) string {
 	}
 
 	if domain, ok := lookup[schoolName]; ok {
-		return fmt.Sprintf("https://logo.clearbit.com/%s", domain)
+		return fmt.Sprintf("https://img.logo.dev/%s?token=%s", domain, logoDevToken)
 	}
 
 	// Fallback: try lowercase name with .edu
 	cleanName := strings.ReplaceAll(strings.ToLower(schoolName), " ", "")
-	return fmt.Sprintf("https://logo.clearbit.com/%s.edu", cleanName)
+	return fmt.Sprintf("https://img.logo.dev/%s.edu?token=%s", cleanName, logoDevToken)
 }
 
 func safeString(data map[string]interface{}, keys ...string) string {

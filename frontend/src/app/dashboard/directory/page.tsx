@@ -4,6 +4,22 @@ import Image from "next/image";
 import { useEffect, useMemo, useState} from "react";
 import Select from "react-select";
 
+
+const customStyles = {
+    control: (base: any) => ({
+        ...base,
+        borderRadius: "12px",   // ← rounded corners
+        borderColor: "#ccc",
+        boxShadow: "none",
+        "&:hover": { borderColor: "#999" },
+    }),
+    option: (base:any, state:any) => ({
+        ...base,
+        backgroundColor: state.isFocused ? '#10b98120' : 'white',
+        color: '#333',
+    }),
+};
+
 /*-------------------Types------------------*/
 type User = {
     id: number;
@@ -23,8 +39,8 @@ const toOptions = (values: (string| undefined)[]) =>
 
 /*------------Nock Data(replace with fetch later----------*/
 const MOCK_USERS: User[] = [
-    { id: 1, name: "Diego Martinez", email: "diego@ex.com", headline: "Web Dev | CS @ UTEP", school: "UTEP", company: "GDG on Campus", location: "TX", avatarUrl: "https://i.pravatar.cc/100?img=11" },
-    { id: 2, name: "Adam Romero", email: "adam@ex.com", headline: "CS @ USC | Prev @ Meta", school: "USC", company: "Meta", location: "CA", avatarUrl: "https://i.pravatar.cc/100?img=12" },
+    { id: 1, name: "Diego Martinez", email: "diego@ex.com", headline: "Web Dev | CS @ UTEP", school: "UTEP", company: "GDG on Campus", location: "TX", picture: "https://i.pravatar.cc/100?img=11" },
+    { id: 2, name: "Adam Romero", email: "adam@ex.com", headline: "CS @ USC | Prev @ Meta", school: "USC", company: "Meta", location: "CA", picture: "https://i.pravatar.cc/100?img=12" },
     // ...
 ];
 export default function Directory() {
@@ -74,13 +90,29 @@ export default function Directory() {
 
     return (
         <div className="flex flex-col p-2 w-full">
-            <div className="flex flex-row w-full">
+            <div className="flex flex-row w-full items-center">
                 <h1 className="text-2xl mr-3" >Directory</h1>
-                <Image className="" src="/nextjs/folder-svgrepo-com.svg" alt="" width={40} height={40} />
+                <Image className="" src="/nextjs/folder-svgrepo-com.svg" alt="" width={35} height={35} />
             </div>
-            <div>
+            <main className="mt-5">
+                {/* Top bar: search + filters */}
+                    <div className="mb-4 flex flex-col gap-2">
+                        <div className="">
+                            <input
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Search by name or email"
+                                className="w-80 rounded-full border border-gray-300 bg-white px-4 py-2 outline-none focus:border-emerald-700"
+                            />
+                        </div>
 
-            </div>
+                        <div className="flex flex-row flex-wrap gap-2">
+                            <Select className="w-52 " placeholder="School" styles={customStyles} options={schoolOptions} onChange={(e) => setSchool(e)} isClearable />
+                            <Select className="w-52" placeholder="Company" styles={customStyles} options={companyOptions} onChange={(e) => setCompanies(e)} isClearable />
+                            <Select className="w-52" placeholder="Location" styles={customStyles} options={locationOptions} onChange={(e) => setLocation(e)} isClearable />
+                        </div>
+                    </div>
+            </main>
         </div>
     );
 }

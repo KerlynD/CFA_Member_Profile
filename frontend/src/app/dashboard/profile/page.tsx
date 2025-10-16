@@ -27,6 +27,20 @@ interface WorkHistory {
   created_at: string;
 }
 
+interface EducationHistory {
+  id: number;
+  user_id: number;
+  school_name: string;
+  school_logo_url: string;
+  degree: string;
+  field_of_study: string;
+  start_date: string;
+  end_date: string;
+  location: string;
+  description: string;
+  created_at: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -49,6 +63,26 @@ export default function ProfilePage() {
   const [workFormData, setWorkFormData] = useState({
     company: "",
     title: "",
+    startMonth: "",
+    startYear: "",
+    endMonth: "",
+    endYear: "",
+    location: "",
+    description: "",
+  });
+
+  // Education History state
+  const [educationHistory, setEducationHistory] = useState<EducationHistory[]>([]);
+  const [loadingEducationHistory, setLoadingEducationHistory] = useState(false);
+  const [showAddEducationForm, setShowAddEducationForm] = useState(false);
+  const [showEditEducationForm, setShowEditEducationForm] = useState(false);
+  const [editingEducationId, setEditingEducationId] = useState<number | null>(null);
+  const [savingEducation, setSavingEducation] = useState(false);
+  const [currentlyStudying, setCurrentlyStudying] = useState(false);
+  const [educationFormData, setEducationFormData] = useState({
+    schoolName: "",
+    degree: "",
+    fieldOfStudy: "",
     startMonth: "",
     startYear: "",
     endMonth: "",
@@ -83,6 +117,8 @@ export default function ProfilePage() {
   useEffect(() => {
     if (activeTab === "workHistory") {
       fetchWorkHistory();
+    } else if (activeTab === "educationHistory") {
+      fetchEducationHistory();
     }
   }, [activeTab]);
 
@@ -335,6 +371,208 @@ export default function ProfilePage() {
     }
   };
 
+  // Education History Functions
+  const sortEducationHistory = (history: EducationHistory[]) => {
+    return [...history].sort((a, b) => {
+      const parseDate = (dateStr: string) => {
+        if (!dateStr || dateStr.toLowerCase() === "present") {
+          return new Date();
+        }
+        const [month, year] = dateStr.split(" ");
+        const monthIndex = months.findIndex(m => m.toLowerCase() === month?.toLowerCase());
+        return new Date(parseInt(year) || 0, monthIndex !== -1 ? monthIndex : 0);
+      };
+
+      const aEnd = parseDate(a.end_date);
+      const bEnd = parseDate(b.end_date);
+      
+      if (bEnd.getTime() !== aEnd.getTime()) {
+        return bEnd.getTime() - aEnd.getTime();
+      }
+      
+      const aStart = parseDate(a.start_date);
+      const bStart = parseDate(b.start_date);
+      return bStart.getTime() - aStart.getTime();
+    });
+  };
+
+  const fetchEducationHistory = async () => {
+    setLoadingEducationHistory(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/education_history", {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setEducationHistory(sortEducationHistory(data || []));
+      } else {
+        console.error("Failed to fetch education history");
+      }
+    } catch (error) {
+      console.error("Error fetching education history:", error);
+    } finally {
+      setLoadingEducationHistory(false);
+    }
+  };
+
+  const handleEditEducation = (education: EducationHistory) => {
+    const [startMonth, startYear] = education.start_date.split(" ");
+    const isCurrentlyStudying = education.end_date.toLowerCase() === "present";
+    const [endMonth, endYear] = isCurrentlyStudying ? ["", ""] : education.end_date.split(" ");
+
+    setEducationFormData({
+      schoolName: education.school_name,
+      degree: education.degree,
+      fieldOfStudy: education.field_of_study,
+      startMonth: startMonth || "",
+      startYear: startYear || "",
+      endMonth: endMonth || "",
+      endYear: endYear || "",
+      location: education.location,
+      description: education.description,
+    });
+    setCurrentlyStudying(isCurrentlyStudying);
+    setEditingEducationId(education.id);
+    setShowEditEducationForm(true);
+  };
+
+  const handleDeleteEducation = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this education entry?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/education_history/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        await fetchEducationHistory();
+        setSuccessMessage("Education deleted successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to delete education"}`);
+      }
+    } catch (error) {
+      console.error("Error deleting education:", error);
+      alert("Failed to delete education");
+    }
+  };
+
+  const handleAddEducation = async () => {
+    setSavingEducation(true);
+    try {
+      const startDate = `${educationFormData.startMonth} ${educationFormData.startYear}`;
+      const endDate = currentlyStudying 
+        ? "Present" 
+        : `${educationFormData.endMonth} ${educationFormData.endYear}`;
+
+      const res = await fetch("http://localhost:8080/api/education_history", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          school_name: educationFormData.schoolName,
+          degree: educationFormData.degree,
+          field_of_study: educationFormData.fieldOfStudy,
+          start_date: startDate,
+          end_date: endDate,
+          location: educationFormData.location,
+          description: educationFormData.description,
+        }),
+      });
+
+      if (res.ok) {
+        setEducationFormData({
+          schoolName: "",
+          degree: "",
+          fieldOfStudy: "",
+          startMonth: "",
+          startYear: "",
+          endMonth: "",
+          endYear: "",
+          location: "",
+          description: "",
+        });
+        setCurrentlyStudying(false);
+        setShowAddEducationForm(false);
+        await fetchEducationHistory();
+        setSuccessMessage("Education added successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to add education"}`);
+      }
+    } catch (error) {
+      console.error("Error adding education:", error);
+      alert("Failed to add education");
+    } finally {
+      setSavingEducation(false);
+    }
+  };
+
+  const handleUpdateEducation = async () => {
+    if (!editingEducationId) return;
+    
+    setSavingEducation(true);
+    try {
+      const startDate = `${educationFormData.startMonth} ${educationFormData.startYear}`;
+      const endDate = currentlyStudying 
+        ? "Present" 
+        : `${educationFormData.endMonth} ${educationFormData.endYear}`;
+
+      const res = await fetch(`http://localhost:8080/api/education_history/${editingEducationId}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          school_name: educationFormData.schoolName,
+          degree: educationFormData.degree,
+          field_of_study: educationFormData.fieldOfStudy,
+          start_date: startDate,
+          end_date: endDate,
+          location: educationFormData.location,
+          description: educationFormData.description,
+        }),
+      });
+
+      if (res.ok) {
+        setEducationFormData({
+          schoolName: "",
+          degree: "",
+          fieldOfStudy: "",
+          startMonth: "",
+          startYear: "",
+          endMonth: "",
+          endYear: "",
+          location: "",
+          description: "",
+        });
+        setCurrentlyStudying(false);
+        setShowEditEducationForm(false);
+        setEditingEducationId(null);
+        await fetchEducationHistory();
+        setSuccessMessage("Education updated successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to update education"}`);
+      }
+    } catch (error) {
+      console.error("Error updating education:", error);
+      alert("Failed to update education");
+    } finally {
+      setSavingEducation(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     
@@ -524,6 +762,19 @@ export default function ProfilePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               Work History
+            </button>
+            <button
+              onClick={() => setActiveTab("educationHistory")}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                activeTab === "educationHistory"
+                  ? "border-indigo-500 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Education History
             </button>
           </nav>
         </div>
@@ -1172,6 +1423,570 @@ export default function ProfilePage() {
                           </button>
                           <button
                             onClick={() => handleDeleteWork(work.id)}
+                            className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition"
+                            title="Delete"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "educationHistory" && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Education History</h2>
+                <button
+                  onClick={() => setShowAddEducationForm(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add Education
+                </button>
+              </div>
+
+              {/* Add Education Form Modal */}
+              {showAddEducationForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-gray-900">Add Education</h3>
+                      <button
+                        onClick={() => {
+                          setShowAddEducationForm(false);
+                          setCurrentlyStudying(false);
+                          setEducationFormData({
+                            schoolName: "",
+                            degree: "",
+                            fieldOfStudy: "",
+                            startMonth: "",
+                            startYear: "",
+                            endMonth: "",
+                            endYear: "",
+                            location: "",
+                            description: "",
+                          });
+                        }}
+                        className="text-gray-400 hover:text-gray-600 transition"
+                      >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div className="p-6 space-y-5">
+                      {/* School Name */}
+                      <div>
+                        <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 mb-2">
+                          School Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="schoolName"
+                          value={educationFormData.schoolName}
+                          onChange={(e) => setEducationFormData({ ...educationFormData, schoolName: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Queens College"
+                        />
+                      </div>
+
+                      {/* Degree */}
+                      <div>
+                        <label htmlFor="degree" className="block text-sm font-medium text-gray-700 mb-2">
+                          Degree <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="degree"
+                          value={educationFormData.degree}
+                          onChange={(e) => setEducationFormData({ ...educationFormData, degree: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Bachelor of Science"
+                        />
+                      </div>
+
+                      {/* Field of Study */}
+                      <div>
+                        <label htmlFor="fieldOfStudy" className="block text-sm font-medium text-gray-700 mb-2">
+                          Field of Study
+                        </label>
+                        <input
+                          type="text"
+                          id="fieldOfStudy"
+                          value={educationFormData.fieldOfStudy}
+                          onChange={(e) => setEducationFormData({ ...educationFormData, fieldOfStudy: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Computer Science"
+                        />
+                      </div>
+
+                      {/* Start Date */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Start Date <span className="text-red-500">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <select
+                            value={educationFormData.startMonth}
+                            onChange={(e) => setEducationFormData({ ...educationFormData, startMonth: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          >
+                            <option value="">Month</option>
+                            {months.map(month => (
+                              <option key={month} value={month}>{month}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={educationFormData.startYear}
+                            onChange={(e) => setEducationFormData({ ...educationFormData, startYear: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          >
+                            <option value="">Year</option>
+                            {years.map(year => (
+                              <option key={year} value={year}>{year}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Currently Studying Checkbox */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="currentlyStudying"
+                          checked={currentlyStudying}
+                          onChange={(e) => setCurrentlyStudying(e.target.checked)}
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <label htmlFor="currentlyStudying" className="text-sm font-medium text-gray-700">
+                          I currently study here
+                        </label>
+                      </div>
+
+                      {/* End Date */}
+                      {!currentlyStudying && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            End Date
+                          </label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <select
+                              value={educationFormData.endMonth}
+                              onChange={(e) => setEducationFormData({ ...educationFormData, endMonth: e.target.value })}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                            >
+                              <option value="">Month</option>
+                              {months.map(month => (
+                                <option key={month} value={month}>{month}</option>
+                              ))}
+                            </select>
+                            <select
+                              value={educationFormData.endYear}
+                              onChange={(e) => setEducationFormData({ ...educationFormData, endYear: e.target.value })}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                            >
+                              <option value="">Year</option>
+                              {years.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Location */}
+                      <div>
+                        <label htmlFor="eduLocation" className="block text-sm font-medium text-gray-700 mb-2">
+                          Location
+                        </label>
+                        <input
+                          type="text"
+                          id="eduLocation"
+                          value={educationFormData.location}
+                          onChange={(e) => setEducationFormData({ ...educationFormData, location: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Queens, NY"
+                        />
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <label htmlFor="eduDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                          Description
+                        </label>
+                        <p className="text-sm text-gray-500 mb-2">
+                          Activities, honors, and coursework.
+                        </p>
+                        <textarea
+                          id="eduDescription"
+                          value={educationFormData.description}
+                          onChange={(e) => setEducationFormData({ ...educationFormData, description: e.target.value })}
+                          rows={4}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
+                          placeholder="Dean's List, Computer Science Club President"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => {
+                          setShowAddEducationForm(false);
+                          setCurrentlyStudying(false);
+                          setEducationFormData({
+                            schoolName: "",
+                            degree: "",
+                            fieldOfStudy: "",
+                            startMonth: "",
+                            startYear: "",
+                            endMonth: "",
+                            endYear: "",
+                            location: "",
+                            description: "",
+                          });
+                        }}
+                        className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAddEducation}
+                        disabled={savingEducation || !educationFormData.schoolName || !educationFormData.degree || !educationFormData.startMonth || !educationFormData.startYear || (!currentlyStudying && (!educationFormData.endMonth || !educationFormData.endYear))}
+                        className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {savingEducation ? "Adding..." : "Add Education"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Education Form Modal */}
+              {showEditEducationForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-gray-900">Edit Education</h3>
+                      <button
+                        onClick={() => {
+                          setShowEditEducationForm(false);
+                          setEditingEducationId(null);
+                          setCurrentlyStudying(false);
+                          setEducationFormData({
+                            schoolName: "",
+                            degree: "",
+                            fieldOfStudy: "",
+                            startMonth: "",
+                            startYear: "",
+                            endMonth: "",
+                            endYear: "",
+                            location: "",
+                            description: "",
+                          });
+                        }}
+                        className="text-gray-400 hover:text-gray-600 transition"
+                      >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div className="p-6 space-y-5">
+                      {/* School Name */}
+                      <div>
+                        <label htmlFor="edit-schoolName" className="block text-sm font-medium text-gray-700 mb-2">
+                          School Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-schoolName"
+                          value={educationFormData.schoolName}
+                          onChange={(e) => setEducationFormData({ ...educationFormData, schoolName: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Queens College"
+                        />
+                      </div>
+
+                      {/* Degree */}
+                      <div>
+                        <label htmlFor="edit-degree" className="block text-sm font-medium text-gray-700 mb-2">
+                          Degree <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-degree"
+                          value={educationFormData.degree}
+                          onChange={(e) => setEducationFormData({ ...educationFormData, degree: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Bachelor of Science"
+                        />
+                      </div>
+
+                      {/* Field of Study */}
+                      <div>
+                        <label htmlFor="edit-fieldOfStudy" className="block text-sm font-medium text-gray-700 mb-2">
+                          Field of Study
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-fieldOfStudy"
+                          value={educationFormData.fieldOfStudy}
+                          onChange={(e) => setEducationFormData({ ...educationFormData, fieldOfStudy: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Computer Science"
+                        />
+                      </div>
+
+                      {/* Start Date */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Start Date <span className="text-red-500">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <select
+                            value={educationFormData.startMonth}
+                            onChange={(e) => setEducationFormData({ ...educationFormData, startMonth: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          >
+                            <option value="">Month</option>
+                            {months.map(month => (
+                              <option key={month} value={month}>{month}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={educationFormData.startYear}
+                            onChange={(e) => setEducationFormData({ ...educationFormData, startYear: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          >
+                            <option value="">Year</option>
+                            {years.map(year => (
+                              <option key={year} value={year}>{year}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Currently Studying Checkbox */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="edit-currentlyStudying"
+                          checked={currentlyStudying}
+                          onChange={(e) => setCurrentlyStudying(e.target.checked)}
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <label htmlFor="edit-currentlyStudying" className="text-sm font-medium text-gray-700">
+                          I currently study here
+                        </label>
+                      </div>
+
+                      {/* End Date */}
+                      {!currentlyStudying && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            End Date
+                          </label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <select
+                              value={educationFormData.endMonth}
+                              onChange={(e) => setEducationFormData({ ...educationFormData, endMonth: e.target.value })}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                            >
+                              <option value="">Month</option>
+                              {months.map(month => (
+                                <option key={month} value={month}>{month}</option>
+                              ))}
+                            </select>
+                            <select
+                              value={educationFormData.endYear}
+                              onChange={(e) => setEducationFormData({ ...educationFormData, endYear: e.target.value })}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                            >
+                              <option value="">Year</option>
+                              {years.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Location */}
+                      <div>
+                        <label htmlFor="edit-eduLocation" className="block text-sm font-medium text-gray-700 mb-2">
+                          Location
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-eduLocation"
+                          value={educationFormData.location}
+                          onChange={(e) => setEducationFormData({ ...educationFormData, location: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Queens, NY"
+                        />
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <label htmlFor="edit-eduDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                          Description
+                        </label>
+                        <p className="text-sm text-gray-500 mb-2">
+                          Activities, honors, and coursework.
+                        </p>
+                        <textarea
+                          id="edit-eduDescription"
+                          value={educationFormData.description}
+                          onChange={(e) => setEducationFormData({ ...educationFormData, description: e.target.value })}
+                          rows={4}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
+                          placeholder="Dean's List, Computer Science Club President"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => {
+                          setShowEditEducationForm(false);
+                          setEditingEducationId(null);
+                          setCurrentlyStudying(false);
+                          setEducationFormData({
+                            schoolName: "",
+                            degree: "",
+                            fieldOfStudy: "",
+                            startMonth: "",
+                            startYear: "",
+                            endMonth: "",
+                            endYear: "",
+                            location: "",
+                            description: "",
+                          });
+                        }}
+                        className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleUpdateEducation}
+                        disabled={savingEducation || !educationFormData.schoolName || !educationFormData.degree || !educationFormData.startMonth || !educationFormData.startYear || (!currentlyStudying && (!educationFormData.endMonth || !educationFormData.endYear))}
+                        className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {savingEducation ? "Updating..." : "Update Education"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {loadingEducationHistory ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-600">Loading education history...</div>
+                </div>
+              ) : educationHistory.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No education history yet</h3>
+                  <p className="text-gray-600 mb-4">
+                    Click &quot;Add Education&quot; to start building your education profile.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {educationHistory.map((education) => (
+                    <div
+                      key={education.id}
+                      className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* School Logo */}
+                        <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                          <Image
+                            src={education.school_logo_url}
+                            alt={education.school_name}
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent && !parent.querySelector('.fallback-icon')) {
+                                const fallbackIcon = document.createElement('div');
+                                fallbackIcon.className = 'fallback-icon w-full h-full flex items-center justify-center text-gray-400';
+                                fallbackIcon.innerHTML = `
+                                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                                  </svg>
+                                `;
+                                parent.appendChild(fallbackIcon);
+                              }
+                            }}
+                          />
+                        </div>
+
+                        {/* Education Details */}
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900">{education.school_name}</h3>
+                          <p className="text-gray-700 font-medium">
+                            {education.degree}{education.field_of_study && `, ${education.field_of_study}`}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                            {education.start_date && education.end_date && (
+                              <span className="flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                {education.start_date} - {education.end_date}
+                              </span>
+                            )}
+                            {education.location && (
+                              <span className="flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                {education.location}
+                              </span>
+                            )}
+                          </div>
+                          {education.description && (
+                            <div className="mt-3 text-gray-700 text-sm leading-relaxed">
+                              {education.description.split('\n').map((line, idx) => (
+                                <p key={idx} className="mb-1">{line}</p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Edit/Delete Actions */}
+                        <div className="flex-shrink-0 flex gap-2">
+                          <button
+                            onClick={() => handleEditEducation(education)}
+                            className="text-indigo-600 hover:text-indigo-800 p-2 hover:bg-indigo-50 rounded-lg transition"
+                            title="Edit"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEducation(education.id)}
                             className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition"
                             title="Delete"
                           >

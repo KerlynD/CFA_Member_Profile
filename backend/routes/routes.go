@@ -36,6 +36,10 @@ func RegisterRoutes(app *fiber.App) {
 	// --- PROTECTED ENDPOINTS ---
 	auth := app.Group("/api", middleware.RequireAuth)
 
+	// Event Registration
+	auth.Post("/events/:id/register", handlers.RegisterForEvent)
+	auth.Delete("/events/:id/register", handlers.UnregisterFromEvent)
+
 	// Profile - IMPORTANT: Specific routes must come before parameterized routes
 	auth.Get("/me", handlers.GetCurrentUser)
 	auth.Put("/users/me", handlers.UpdateMyProfile)
@@ -65,4 +69,6 @@ func RegisterRoutes(app *fiber.App) {
 	// --- ADMIN-ONLY ENDPOINTS ---
 	admin := app.Group("/api/admin", middleware.RequireAuth, middleware.RequireAdmin)
 	admin.Post("/events", handlers.AddEvent)
+	admin.Put("/events/:id", handlers.UpdateEvent)
+	admin.Delete("/events/:id", handlers.DeleteEvent)
 }

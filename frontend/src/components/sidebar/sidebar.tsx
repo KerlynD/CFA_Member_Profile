@@ -68,7 +68,7 @@ export default function Sidebar() {
                         <Image src="/assets/leetcode.svg"
                                alt="LeetCode icon"
                                width={20}
-                               height={20} />LC Leaderboard
+                               height={20} />Leaderboard
                     </Link></li>
                     <li><Link aria-current={ pathname.endsWith("/profile") ? "page" : undefined}
                               className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/profile">

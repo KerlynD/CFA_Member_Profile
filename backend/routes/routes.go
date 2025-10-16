@@ -59,6 +59,8 @@ func RegisterRoutes(app *fiber.App) {
 	// Education History
 	auth.Get("/education_history", handlers.GetEducationHistory)
 	auth.Post("/education_history", handlers.AddEducationHistory)
+	auth.Put("/education_history/:id", handlers.UpdateEducationHistory)
+	auth.Delete("/education_history/:id", handlers.DeleteEducationHistory)
 
 	// --- ADMIN-ONLY ENDPOINTS ---
 	admin := app.Group("/api/admin", middleware.RequireAuth, middleware.RequireAdmin)

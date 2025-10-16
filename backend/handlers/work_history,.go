@@ -102,3 +102,100 @@ func AddWorkHistory(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"message": "Work history added successfully"})
 }
+
+// PUT /api/work_history/:id
+func UpdateWorkHistory(c *fiber.Ctx) error {
+	/*
+		Updates an existing work history entry
+		Requires the work history ID in the URL
+	*/
+
+	// Get & Verify JWT
+	token := c.Cookies("session")
+	if token == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized/No JWT found",
+		})
+	}
+
+	claims, err := utils.VerifyJWT(token)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Expired/Invalid JWT",
+		})
+	}
+
+	// Get the work history ID from the URL
+	id := c.Params("id")
+
+	var body models.WorkHistory
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body/JSON"})
+	}
+
+	// Generate company logo URL using logo.dev
+	companyLogo := getCompanyLogoURL(body.Company)
+
+	// Update the work history in the database
+	result, err := db.Pool.Exec(context.Background(),
+		`UPDATE work_history 
+		SET company=$1, company_logo_url=$2, title=$3, start_date=$4, end_date=$5, location=$6, description=$7
+		WHERE id=$8 AND user_id=$9`,
+		body.Company, companyLogo, body.Title, body.StartDate, body.EndDate,
+		body.Location, body.Description, id, claims.UserID)
+
+	if err != nil {
+		log.Println("Internal DB Error: ", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Database update failed"})
+	}
+
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return c.Status(404).JSON(fiber.Map{"error": "Work history not found or unauthorized"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Work history updated successfully"})
+}
+
+// DELETE /api/work_history/:id
+func DeleteWorkHistory(c *fiber.Ctx) error {
+	/*
+		Deletes a work history entry
+		Requires the work history ID in the URL
+	*/
+
+	// Get & Verify JWT
+	token := c.Cookies("session")
+	if token == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized/No JWT found",
+		})
+	}
+
+	claims, err := utils.VerifyJWT(token)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Expired/Invalid JWT",
+		})
+	}
+
+	// Get the work history ID from the URL
+	id := c.Params("id")
+
+	// Delete the work history from the database
+	result, err := db.Pool.Exec(context.Background(),
+		`DELETE FROM work_history WHERE id=$1 AND user_id=$2`,
+		id, claims.UserID)
+
+	if err != nil {
+		log.Println("Internal DB Error: ", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Database delete failed"})
+	}
+
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return c.Status(404).JSON(fiber.Map{"error": "Work history not found or unauthorized"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Work history deleted successfully"})
+}

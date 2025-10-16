@@ -14,6 +14,19 @@ interface User {
   school: string | null;
 }
 
+interface WorkHistory {
+  id: number;
+  user_id: number;
+  company: string;
+  company_logo_url: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  location: string;
+  description: string;
+  created_at: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -24,6 +37,33 @@ export default function ProfilePage() {
   const [showPhotoUrlInput, setShowPhotoUrlInput] = useState(false);
   const [photoUrl, setPhotoUrl] = useState("");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // Work History state
+  const [workHistory, setWorkHistory] = useState<WorkHistory[]>([]);
+  const [loadingWorkHistory, setLoadingWorkHistory] = useState(false);
+  const [showAddWorkForm, setShowAddWorkForm] = useState(false);
+  const [showEditWorkForm, setShowEditWorkForm] = useState(false);
+  const [editingWorkId, setEditingWorkId] = useState<number | null>(null);
+  const [savingWork, setSavingWork] = useState(false);
+  const [currentlyWorking, setCurrentlyWorking] = useState(false);
+  const [workFormData, setWorkFormData] = useState({
+    company: "",
+    title: "",
+    startMonth: "",
+    startYear: "",
+    endMonth: "",
+    endYear: "",
+    location: "",
+    description: "",
+  });
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 50 }, (_, i) => currentYear - i);
   
   // Form state for General section
   const [formData, setFormData] = useState({
@@ -39,6 +79,12 @@ export default function ProfilePage() {
     fetchUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "workHistory") {
+      fetchWorkHistory();
+    }
+  }, [activeTab]);
 
   const fetchUser = async () => {
     try {
@@ -81,6 +127,211 @@ export default function ProfilePage() {
       setError(`Network error: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sortWorkHistory = (history: WorkHistory[]) => {
+    return [...history].sort((a, b) => {
+      // Parse dates - treat "Present" as current date
+      const parseDate = (dateStr: string) => {
+        if (!dateStr || dateStr.toLowerCase() === "present") {
+          return new Date();
+        }
+        // Parse "Month Year" format (e.g., "June 2025")
+        const [month, year] = dateStr.split(" ");
+        const monthIndex = months.findIndex(m => m.toLowerCase() === month?.toLowerCase());
+        return new Date(parseInt(year) || 0, monthIndex !== -1 ? monthIndex : 0);
+      };
+
+      const aEnd = parseDate(a.end_date);
+      const bEnd = parseDate(b.end_date);
+      
+      // Sort by end date descending (most recent first)
+      if (bEnd.getTime() !== aEnd.getTime()) {
+        return bEnd.getTime() - aEnd.getTime();
+      }
+      
+      // If end dates are equal, sort by start date descending
+      const aStart = parseDate(a.start_date);
+      const bStart = parseDate(b.start_date);
+      return bStart.getTime() - aStart.getTime();
+    });
+  };
+
+  const fetchWorkHistory = async () => {
+    setLoadingWorkHistory(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/work_history", {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setWorkHistory(sortWorkHistory(data || []));
+      } else {
+        console.error("Failed to fetch work history");
+      }
+    } catch (error) {
+      console.error("Error fetching work history:", error);
+    } finally {
+      setLoadingWorkHistory(false);
+    }
+  };
+
+  const handleEditWork = (work: WorkHistory) => {
+    // Parse the date back into month/year
+    const [startMonth, startYear] = work.start_date.split(" ");
+    const isCurrentlyWorking = work.end_date.toLowerCase() === "present";
+    const [endMonth, endYear] = isCurrentlyWorking ? ["", ""] : work.end_date.split(" ");
+
+    setWorkFormData({
+      company: work.company,
+      title: work.title,
+      startMonth: startMonth || "",
+      startYear: startYear || "",
+      endMonth: endMonth || "",
+      endYear: endYear || "",
+      location: work.location,
+      description: work.description,
+    });
+    setCurrentlyWorking(isCurrentlyWorking);
+    setEditingWorkId(work.id);
+    setShowEditWorkForm(true);
+  };
+
+  const handleDeleteWork = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this work experience?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/work_history/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        await fetchWorkHistory();
+        setSuccessMessage("Work experience deleted successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to delete work experience"}`);
+      }
+    } catch (error) {
+      console.error("Error deleting work experience:", error);
+      alert("Failed to delete work experience");
+    }
+  };
+
+  const handleAddWork = async () => {
+    setSavingWork(true);
+    try {
+      const startDate = `${workFormData.startMonth} ${workFormData.startYear}`;
+      const endDate = currentlyWorking 
+        ? "Present" 
+        : `${workFormData.endMonth} ${workFormData.endYear}`;
+
+      const res = await fetch("http://localhost:8080/api/work_history", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          company: workFormData.company,
+          title: workFormData.title,
+          start_date: startDate,
+          end_date: endDate,
+          location: workFormData.location,
+          description: workFormData.description,
+        }),
+      });
+
+      if (res.ok) {
+        // Reset form and close modal
+        setWorkFormData({
+          company: "",
+          title: "",
+          startMonth: "",
+          startYear: "",
+          endMonth: "",
+          endYear: "",
+          location: "",
+          description: "",
+        });
+        setCurrentlyWorking(false);
+        setShowAddWorkForm(false);
+        // Refresh work history
+        await fetchWorkHistory();
+        setSuccessMessage("Work experience added successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to add work experience"}`);
+      }
+    } catch (error) {
+      console.error("Error adding work experience:", error);
+      alert("Failed to add work experience");
+    } finally {
+      setSavingWork(false);
+    }
+  };
+
+  const handleUpdateWork = async () => {
+    if (!editingWorkId) return;
+    
+    setSavingWork(true);
+    try {
+      const startDate = `${workFormData.startMonth} ${workFormData.startYear}`;
+      const endDate = currentlyWorking 
+        ? "Present" 
+        : `${workFormData.endMonth} ${workFormData.endYear}`;
+
+      const res = await fetch(`http://localhost:8080/api/work_history/${editingWorkId}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          company: workFormData.company,
+          title: workFormData.title,
+          start_date: startDate,
+          end_date: endDate,
+          location: workFormData.location,
+          description: workFormData.description,
+        }),
+      });
+
+      if (res.ok) {
+        // Reset form and close modal
+        setWorkFormData({
+          company: "",
+          title: "",
+          startMonth: "",
+          startYear: "",
+          endMonth: "",
+          endYear: "",
+          location: "",
+          description: "",
+        });
+        setCurrentlyWorking(false);
+        setShowEditWorkForm(false);
+        setEditingWorkId(null);
+        // Refresh work history
+        await fetchWorkHistory();
+        setSuccessMessage("Work experience updated successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to update work experience"}`);
+      }
+    } catch (error) {
+      console.error("Error updating work experience:", error);
+      alert("Failed to update work experience");
+    } finally {
+      setSavingWork(false);
     }
   };
 
@@ -261,12 +512,26 @@ export default function ProfilePage() {
               </svg>
               General
             </button>
+            <button
+              onClick={() => setActiveTab("workHistory")}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                activeTab === "workHistory"
+                  ? "border-indigo-500 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Work History
+            </button>
           </nav>
         </div>
 
         {/* Tab Content */}
         <div className="p-8">
-          <div>
+          {activeTab === "general" && (
+            <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">General</h2>
               
               <div className="space-y-6">
@@ -358,24 +623,6 @@ export default function ProfilePage() {
                     placeholder="Jamaica, Queens, NY, USA"
                   />
                 </div>
-
-                {/* Phone Number (optional for now) */}
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <p className="text-sm text-gray-500 mb-2">
-                    Enter your 10-digit phone number. We&apos;ll use this to send you important Code for All updates.
-                  </p>
-                  <input
-                    type="tel"
-                    id="phone"
-                    placeholder="(516) 462-5419"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                    disabled
-                  />
-                  <p className="text-xs text-gray-400 mt-1">Coming soon</p>
-                </div>
               </div>
 
               {/* Success Message */}
@@ -410,6 +657,536 @@ export default function ProfilePage() {
                 </button>
               </div>
             </div>
+          )}
+
+          {activeTab === "workHistory" && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Work History</h2>
+                <button
+                  onClick={() => setShowAddWorkForm(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add Experience
+                </button>
+              </div>
+
+              {/* Add Work Form Modal */}
+              {showAddWorkForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-gray-900">Add Work Experience</h3>
+                      <button
+                        onClick={() => {
+                          setShowAddWorkForm(false);
+                          setCurrentlyWorking(false);
+                          setWorkFormData({
+                            company: "",
+                            title: "",
+                            startMonth: "",
+                            startYear: "",
+                            endMonth: "",
+                            endYear: "",
+                            location: "",
+                            description: "",
+                          });
+                        }}
+                        className="text-gray-400 hover:text-gray-600 transition"
+                      >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div className="p-6 space-y-5">
+                      {/* Company */}
+                      <div>
+                        <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                          Company <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="company"
+                          value={workFormData.company}
+                          onChange={(e) => setWorkFormData({ ...workFormData, company: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Capital One"
+                        />
+                      </div>
+
+                      {/* Title */}
+                      <div>
+                        <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 mb-2">
+                          Title <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="jobTitle"
+                          value={workFormData.title}
+                          onChange={(e) => setWorkFormData({ ...workFormData, title: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Software Engineer Intern"
+                        />
+                      </div>
+
+                      {/* Start Date */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Start Date <span className="text-red-500">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <select
+                            value={workFormData.startMonth}
+                            onChange={(e) => setWorkFormData({ ...workFormData, startMonth: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          >
+                            <option value="">Month</option>
+                            {months.map(month => (
+                              <option key={month} value={month}>{month}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={workFormData.startYear}
+                            onChange={(e) => setWorkFormData({ ...workFormData, startYear: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          >
+                            <option value="">Year</option>
+                            {years.map(year => (
+                              <option key={year} value={year}>{year}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Currently Working Checkbox */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="currentlyWorking"
+                          checked={currentlyWorking}
+                          onChange={(e) => setCurrentlyWorking(e.target.checked)}
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <label htmlFor="currentlyWorking" className="text-sm font-medium text-gray-700">
+                          I currently work here
+                        </label>
+                      </div>
+
+                      {/* End Date */}
+                      {!currentlyWorking && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            End Date
+                          </label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <select
+                              value={workFormData.endMonth}
+                              onChange={(e) => setWorkFormData({ ...workFormData, endMonth: e.target.value })}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                            >
+                              <option value="">Month</option>
+                              {months.map(month => (
+                                <option key={month} value={month}>{month}</option>
+                              ))}
+                            </select>
+                            <select
+                              value={workFormData.endYear}
+                              onChange={(e) => setWorkFormData({ ...workFormData, endYear: e.target.value })}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                            >
+                              <option value="">Year</option>
+                              {years.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Location */}
+                      <div>
+                        <label htmlFor="workLocation" className="block text-sm font-medium text-gray-700 mb-2">
+                          Location
+                        </label>
+                        <input
+                          type="text"
+                          id="workLocation"
+                          value={workFormData.location}
+                          onChange={(e) => setWorkFormData({ ...workFormData, location: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="New York, NY • Hybrid"
+                        />
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                          Description
+                        </label>
+                        <p className="text-sm text-gray-500 mb-2">
+                          Add bullet points about your responsibilities and achievements. Start each line with &quot;•&quot; for bullet points.
+                        </p>
+                        <textarea
+                          id="description"
+                          value={workFormData.description}
+                          onChange={(e) => setWorkFormData({ ...workFormData, description: e.target.value })}
+                          rows={6}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
+                          placeholder="• Built a Java Spring Boot microservice&#10;• Created a Snowflake SQL pipeline&#10;• Designed REST APIs in Python"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => {
+                          setShowAddWorkForm(false);
+                          setCurrentlyWorking(false);
+                          setWorkFormData({
+                            company: "",
+                            title: "",
+                            startMonth: "",
+                            startYear: "",
+                            endMonth: "",
+                            endYear: "",
+                            location: "",
+                            description: "",
+                          });
+                        }}
+                        className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAddWork}
+                        disabled={savingWork || !workFormData.company || !workFormData.title || !workFormData.startMonth || !workFormData.startYear || (!currentlyWorking && (!workFormData.endMonth || !workFormData.endYear))}
+                        className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {savingWork ? "Adding..." : "Add Experience"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Work Form Modal */}
+              {showEditWorkForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-gray-900">Edit Work Experience</h3>
+                      <button
+                        onClick={() => {
+                          setShowEditWorkForm(false);
+                          setEditingWorkId(null);
+                          setCurrentlyWorking(false);
+                          setWorkFormData({
+                            company: "",
+                            title: "",
+                            startMonth: "",
+                            startYear: "",
+                            endMonth: "",
+                            endYear: "",
+                            location: "",
+                            description: "",
+                          });
+                        }}
+                        className="text-gray-400 hover:text-gray-600 transition"
+                      >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div className="p-6 space-y-5">
+                      {/* Company */}
+                      <div>
+                        <label htmlFor="edit-company" className="block text-sm font-medium text-gray-700 mb-2">
+                          Company <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-company"
+                          value={workFormData.company}
+                          onChange={(e) => setWorkFormData({ ...workFormData, company: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Capital One"
+                        />
+                      </div>
+
+                      {/* Title */}
+                      <div>
+                        <label htmlFor="edit-jobTitle" className="block text-sm font-medium text-gray-700 mb-2">
+                          Title <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-jobTitle"
+                          value={workFormData.title}
+                          onChange={(e) => setWorkFormData({ ...workFormData, title: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="Software Engineer Intern"
+                        />
+                      </div>
+
+                      {/* Start Date */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Start Date <span className="text-red-500">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <select
+                            value={workFormData.startMonth}
+                            onChange={(e) => setWorkFormData({ ...workFormData, startMonth: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          >
+                            <option value="">Month</option>
+                            {months.map(month => (
+                              <option key={month} value={month}>{month}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={workFormData.startYear}
+                            onChange={(e) => setWorkFormData({ ...workFormData, startYear: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          >
+                            <option value="">Year</option>
+                            {years.map(year => (
+                              <option key={year} value={year}>{year}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Currently Working Checkbox */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="edit-currentlyWorking"
+                          checked={currentlyWorking}
+                          onChange={(e) => setCurrentlyWorking(e.target.checked)}
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <label htmlFor="edit-currentlyWorking" className="text-sm font-medium text-gray-700">
+                          I currently work here
+                        </label>
+                      </div>
+
+                      {/* End Date */}
+                      {!currentlyWorking && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            End Date
+                          </label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <select
+                              value={workFormData.endMonth}
+                              onChange={(e) => setWorkFormData({ ...workFormData, endMonth: e.target.value })}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                            >
+                              <option value="">Month</option>
+                              {months.map(month => (
+                                <option key={month} value={month}>{month}</option>
+                              ))}
+                            </select>
+                            <select
+                              value={workFormData.endYear}
+                              onChange={(e) => setWorkFormData({ ...workFormData, endYear: e.target.value })}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                            >
+                              <option value="">Year</option>
+                              {years.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Location */}
+                      <div>
+                        <label htmlFor="edit-workLocation" className="block text-sm font-medium text-gray-700 mb-2">
+                          Location
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-workLocation"
+                          value={workFormData.location}
+                          onChange={(e) => setWorkFormData({ ...workFormData, location: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                          placeholder="New York, NY • Hybrid"
+                        />
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-2">
+                          Description
+                        </label>
+                        <p className="text-sm text-gray-500 mb-2">
+                          Add bullet points about your responsibilities and achievements. Start each line with &quot;•&quot; for bullet points.
+                        </p>
+                        <textarea
+                          id="edit-description"
+                          value={workFormData.description}
+                          onChange={(e) => setWorkFormData({ ...workFormData, description: e.target.value })}
+                          rows={6}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
+                          placeholder="• Built a Java Spring Boot microservice&#10;• Created a Snowflake SQL pipeline&#10;• Designed REST APIs in Python"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => {
+                          setShowEditWorkForm(false);
+                          setEditingWorkId(null);
+                          setCurrentlyWorking(false);
+                          setWorkFormData({
+                            company: "",
+                            title: "",
+                            startMonth: "",
+                            startYear: "",
+                            endMonth: "",
+                            endYear: "",
+                            location: "",
+                            description: "",
+                          });
+                        }}
+                        className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleUpdateWork}
+                        disabled={savingWork || !workFormData.company || !workFormData.title || !workFormData.startMonth || !workFormData.startYear || (!currentlyWorking && (!workFormData.endMonth || !workFormData.endYear))}
+                        className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {savingWork ? "Updating..." : "Update Experience"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {loadingWorkHistory ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-600">Loading work history...</div>
+                </div>
+              ) : workHistory.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No work history yet</h3>
+                  <p className="text-gray-600 mb-4">
+                    Click &quot;Add Experience&quot; to start building your professional profile.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {workHistory.map((work) => (
+                    <div
+                      key={work.id}
+                      className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Company Logo */}
+                        <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                          <Image
+                            src={work.company_logo_url}
+                            alt={work.company}
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              // Hide broken image and show fallback icon
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent && !parent.querySelector('.fallback-icon')) {
+                                const fallbackIcon = document.createElement('div');
+                                fallbackIcon.className = 'fallback-icon w-full h-full flex items-center justify-center text-gray-400';
+                                fallbackIcon.innerHTML = `
+                                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd" />
+                                  </svg>
+                                `;
+                                parent.appendChild(fallbackIcon);
+                              }
+                            }}
+                          />
+                        </div>
+
+                        {/* Work Details */}
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900">{work.title}</h3>
+                          <p className="text-gray-700 font-medium">{work.company}</p>
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                            {work.start_date && work.end_date && (
+                              <span className="flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                {work.start_date} - {work.end_date}
+                              </span>
+                            )}
+                            {work.location && (
+                              <span className="flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                {work.location}
+                              </span>
+                            )}
+                          </div>
+                          {work.description && (
+                            <div className="mt-3 text-gray-700 text-sm leading-relaxed">
+                              {work.description.split('\n').map((line, idx) => (
+                                <p key={idx} className="mb-1">{line}</p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Edit/Delete Actions */}
+                        <div className="flex-shrink-0 flex gap-2">
+                          <button
+                            onClick={() => handleEditWork(work)}
+                            className="text-indigo-600 hover:text-indigo-800 p-2 hover:bg-indigo-50 rounded-lg transition"
+                            title="Edit"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteWork(work.id)}
+                            className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition"
+                            title="Delete"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

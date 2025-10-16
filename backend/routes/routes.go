@@ -53,6 +53,8 @@ func RegisterRoutes(app *fiber.App) {
 	// Work History
 	auth.Post("/work_history", handlers.AddWorkHistory)
 	auth.Get("/work_history", handlers.GetWorkHistory)
+	auth.Put("/work_history/:id", handlers.UpdateWorkHistory)
+	auth.Delete("/work_history/:id", handlers.DeleteWorkHistory)
 
 	// Education History
 	auth.Get("/education_history", handlers.GetEducationHistory)

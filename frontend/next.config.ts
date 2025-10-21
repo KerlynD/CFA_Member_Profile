@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         hostname: 'img.logo.dev',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
     ],
   },
 };

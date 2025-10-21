@@ -43,10 +43,12 @@ func RegisterRoutes(app *fiber.App) {
 	// Profile - IMPORTANT: Specific routes must come before parameterized routes
 	auth.Get("/me", handlers.GetCurrentUser)
 	auth.Put("/users/me", handlers.UpdateMyProfile)
+	auth.Post("/users/me/picture", handlers.UploadProfilePicture)
 	auth.Put("/users/:id", handlers.UpdateUser)
 
 	// Integrations
 	auth.Get("/integrations", handlers.GetIntegrationsOverview)
+	auth.Post("/integrations/discord/verify", handlers.VerifyDiscordMembership)
 
 	// Offers
 	auth.Post("/offers", handlers.AddOffer)

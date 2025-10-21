@@ -212,7 +212,7 @@ export default function Offers() {
 
   const { avgHourly, avgMonthly } = calculateAverages();
 
-  return (
+    return (
     <div className="max-w-7xl mx-auto p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -441,7 +441,7 @@ export default function Offers() {
               </div>
 
               {/* Location */}
-              <div>
+        <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
                   Location <span className="text-red-500">*</span>
                 </label>
@@ -568,6 +568,6 @@ export default function Offers() {
           </div>
         )}
       </div>
-    </div>
-  );
+        </div>
+    );
 }

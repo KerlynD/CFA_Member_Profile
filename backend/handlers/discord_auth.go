@@ -7,15 +7,17 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gofiber/fiber/v2"
-	"golang.org/x/oauth2"
-    "github.com/ravener/discord-oauth2"
 	"github.com/KerlynD/CFA_Member_Profile/backend/db"
 	"github.com/KerlynD/CFA_Member_Profile/backend/models"
 	"github.com/KerlynD/CFA_Member_Profile/backend/utils"
+	"github.com/gofiber/fiber/v2"
+	"github.com/ravener/discord-oauth2"
+	"golang.org/x/oauth2"
 )
 
 var discordOAuthConfig *oauth2.Config
+var discordBotToken string
+var discordGuildID string
 
 func InitDiscordOAuth() {
 	/*
@@ -30,6 +32,9 @@ func InitDiscordOAuth() {
 		Scopes:       []string{"identify", "email"},
 		Endpoint:     discord.Endpoint,
 	}
+
+	discordBotToken = os.Getenv("DISCORD_BOT_TOKEN")
+	discordGuildID = os.Getenv("DISCORD_GUILD_ID")
 }
 
 func DiscordLogin(c *fiber.Ctx) error {
@@ -63,6 +68,39 @@ func GetDiscordIntegration(c *fiber.Ctx) error {
 	return c.JSON(integration)
 }
 
+// Helper function to verify if a Discord user is in the guild
+func verifyDiscordMembership(discordID string) bool {
+	/*
+		Checks if a Discord user is a member of the guild using the bot token
+		Returns true if the user is in the server, false otherwise
+	*/
+	if discordBotToken == "" || discordGuildID == "" {
+		fmt.Println("Warning: DISCORD_BOT_TOKEN or DISCORD_GUILD_ID not set")
+		return false
+	}
+
+	// Discord API endpoint to get guild member
+	url := fmt.Sprintf("https://discord.com/api/v10/guilds/%s/members/%s", discordGuildID, discordID)
+
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return false
+	}
+
+	// Use bot token for authentication
+	request.Header.Set("Authorization", fmt.Sprintf("Bot %s", discordBotToken))
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		fmt.Println("Error checking guild membership:", err)
+		return false
+	}
+	defer response.Body.Close()
+
+	// 200 = user is in the server, 404 = user is not in the server
+	return response.StatusCode == 200
+}
 
 func DiscordCallback(c *fiber.Ctx) error {
 	/*
@@ -93,7 +131,7 @@ func DiscordCallback(c *fiber.Ctx) error {
 
 	var userData map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&userData)
-	
+
 	// Extract
 	discordID := userData["id"].(string)
 	username := userData["username"].(string)
@@ -115,18 +153,64 @@ func DiscordCallback(c *fiber.Ctx) error {
 			"error": "Expired/Invalid JWT",
 		})
 	}
-	
-	// Save to DB
+
+	// Check if user is in the guild (verify membership)
+	isVerified := verifyDiscordMembership(discordID)
+
+	// Save to DB with verification status
 	_, err = db.Pool.Exec(context.Background(),
 		`INSERT INTO discord_integrations (user_id, discord_id, username, discriminator, avatar_url, verified)
-		 VALUES ($1, $2, $3, $4, $5, TRUE)
+		 VALUES ($1, $2, $3, $4, $5, $6)
 		 ON CONFLICT (discord_id) 
-		 DO UPDATE SET username=$3, discriminator=$4, avatar_url=$5, verified=TRUE`,
-		claims.UserID, discordID, username, discriminator, avatarURL)
+		 DO UPDATE SET username=$3, discriminator=$4, avatar_url=$5, verified=$6`,
+		claims.UserID, discordID, username, discriminator, avatarURL, isVerified)
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to save to database: " + err.Error()})
 	}
 
-	return c.Redirect("http://localhost:3000/profile?discord=linked")
+	return c.Redirect("http://localhost:3000/dashboard/profile")
+}
+
+// POST /api/integrations/discord/verify
+func VerifyDiscordMembership(c *fiber.Ctx) error {
+	/*
+		Manually triggers verification check for the current user's Discord integration
+		Updates the verified status in the database
+	*/
+	claims, err := utils.VerifyJWT(c.Cookies("session"))
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized/No JWT found"})
+	}
+
+	// Get the user's Discord integration
+	var discordID string
+	err = db.Pool.QueryRow(context.Background(),
+		`SELECT discord_id FROM discord_integrations WHERE user_id=$1`, claims.UserID).Scan(&discordID)
+
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Discord not linked"})
+	}
+
+	// Verify membership
+	isVerified := verifyDiscordMembership(discordID)
+
+	// Update verified status in DB
+	_, err = db.Pool.Exec(context.Background(),
+		`UPDATE discord_integrations SET verified=$1 WHERE user_id=$2`,
+		isVerified, claims.UserID)
+
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to update verification status"})
+	}
+
+	return c.JSON(fiber.Map{
+		"verified": isVerified,
+		"message": func() string {
+			if isVerified {
+				return "Verified! You are a member of the server."
+			}
+			return "Not verified. Please join the Discord server and try again."
+		}(),
+	})
 }

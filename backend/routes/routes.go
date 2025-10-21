@@ -50,6 +50,9 @@ func RegisterRoutes(app *fiber.App) {
 	auth.Get("/integrations", handlers.GetIntegrationsOverview)
 	auth.Post("/integrations/discord/verify", handlers.VerifyDiscordMembership)
 
+	// LeetCode Leaderboard lookup (read-only)
+	auth.Get("/leetcode/lookup", handlers.GetLeetCodeStats)
+
 	// Offers
 	auth.Post("/offers", handlers.AddOffer)
 

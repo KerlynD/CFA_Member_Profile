@@ -19,6 +19,10 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/api/auth/discord/login", handlers.DiscordLogin)
 	app.Get("/api/auth/discord/callback", handlers.DiscordCallback)
 
+	// GitHub Auth
+	app.Get("/api/auth/github/login", handlers.GithubLogin)
+	app.Get("/api/auth/github/callback", handlers.GithubCallback)
+
 	// Logout
 	app.Get("/api/logout", handlers.Logout)
 
@@ -58,6 +62,11 @@ func RegisterRoutes(app *fiber.App) {
 
 	// Discord Integration
 	auth.Get("/integrations/discord", handlers.GetDiscordIntegration)
+
+	// GitHub Integration
+	auth.Get("/integrations/github", handlers.GetGithubIntegration)
+	auth.Get("/integrations/github/repos", handlers.GetGithubRepos)
+	auth.Post("/integrations/github/repos", handlers.SaveTopRepos)
 
 	// Work History
 	auth.Post("/work_history", handlers.AddWorkHistory)

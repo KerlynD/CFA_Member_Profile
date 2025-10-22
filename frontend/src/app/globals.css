@@ -23,7 +23,7 @@
 /* Global body styling */
 body {
   @apply bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 text-gray-800 min-h-screen;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-open-sans), sans-serif;
 }
 
 /* smooth animations */

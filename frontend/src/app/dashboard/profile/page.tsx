@@ -54,6 +54,29 @@ interface DiscordIntegration {
   joined_at: string;
 }
 
+interface GithubIntegration {
+  id: number;
+  user_id: number;
+  github_id: string;
+  username: string;
+  avatar_url: string;
+  profile_url: string;
+  top_repos: string[];
+  joined_at: string;
+}
+
+interface GithubRepo {
+  id: number;
+  name: string;
+  full_name: string;
+  description: string;
+  language: string;
+  stargazers_count: number;
+  forks_count: number;
+  html_url: string;
+  private: boolean;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -111,6 +134,13 @@ export default function ProfilePage() {
   // Integrations state
   const [discordIntegration, setDiscordIntegration] = useState<DiscordIntegration | null>(null);
   const [loadingDiscord, setLoadingDiscord] = useState(false);
+  const [githubIntegration, setGithubIntegration] = useState<GithubIntegration | null>(null);
+  const [loadingGithub, setLoadingGithub] = useState(false);
+  const [showRepoModal, setShowRepoModal] = useState(false);
+  const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
+  const [selectedRepos, setSelectedRepos] = useState<string[]>([]);
+  const [loadingRepos, setLoadingRepos] = useState(false);
+  const [savingRepos, setSavingRepos] = useState(false);
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -133,6 +163,18 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchUser();
     fetchDiscordIntegration(); // Fetch Discord status on page load for verified badge
+    fetchGithubIntegration(); // Fetch GitHub status on page load
+    
+    // Check for GitHub OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("github_connected") === "true") {
+      setSuccessMessage("GitHub connected successfully! Select your top 3 repositories.");
+      setActiveTab("integrations");
+      // Clean up URL
+      window.history.replaceState({}, "", "/dashboard/profile?tab=integrations");
+      // Load repos and show modal
+      handleSelectRepos();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -144,6 +186,7 @@ export default function ProfilePage() {
     } else if (activeTab === "integrations") {
       // Refresh integrations when tab is opened
       fetchDiscordIntegration();
+      fetchGithubIntegration();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
@@ -651,6 +694,99 @@ export default function ProfilePage() {
     } catch (error) {
       console.error("Error verifying Discord:", error);
       alert("Failed to verify Discord membership");
+    }
+  };
+
+  // GitHub Integration Functions
+  const fetchGithubIntegration = async () => {
+    setLoadingGithub(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/github", {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setGithubIntegration(data);
+        setSelectedRepos(data.top_repos || []);
+      } else {
+        // Not linked yet - this is fine
+        setGithubIntegration(null);
+        setSelectedRepos([]);
+      }
+    } catch (error) {
+      console.error("Error fetching GitHub integration:", error);
+    } finally {
+      setLoadingGithub(false);
+    }
+  };
+
+  const handleConnectGithub = () => {
+    // Redirect to GitHub OAuth
+    window.location.href = "http://localhost:8080/api/auth/github/login";
+  };
+
+  const handleSelectRepos = async () => {
+    // Fetch user's repositories
+    setLoadingRepos(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/github/repos", {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setGithubRepos(data);
+        setShowRepoModal(true);
+      } else {
+        alert("Failed to fetch repositories");
+      }
+    } catch (error) {
+      console.error("Error fetching repos:", error);
+      alert("Failed to fetch repositories");
+    } finally {
+      setLoadingRepos(false);
+    }
+  };
+
+  const handleToggleRepo = (repoFullName: string) => {
+    if (selectedRepos.includes(repoFullName)) {
+      // Remove repo
+      setSelectedRepos(selectedRepos.filter(r => r !== repoFullName));
+    } else {
+      // Add repo (max 3)
+      if (selectedRepos.length < 3) {
+        setSelectedRepos([...selectedRepos, repoFullName]);
+      }
+    }
+  };
+
+  const handleSaveRepos = async () => {
+    setSavingRepos(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/github/repos", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ repos: selectedRepos }),
+      });
+
+      if (res.ok) {
+        await fetchGithubIntegration();
+        setShowRepoModal(false);
+        setSuccessMessage("Top repositories saved successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to save repositories"}`);
+      }
+    } catch (error) {
+      console.error("Error saving repos:", error);
+      alert("Failed to save repositories");
+    } finally {
+      setSavingRepos(false);
     }
   };
 
@@ -2214,7 +2350,7 @@ export default function ProfilePage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Discord Integration Card */}
-                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all relative">
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all relative flex flex-col">
                     {/* Connected Badge */}
                     {discordIntegration && (
                       <div className="absolute top-4 right-4">
@@ -2235,63 +2371,68 @@ export default function ProfilePage() {
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Discord</h3>
 
                     {/* Description */}
-                    {discordIntegration ? (
-                      <div className="mb-4">
-                        <p className="text-sm text-gray-600 mb-2">
-                          <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="text-[#5865F2] hover:underline">
-                            discord.com
-                          </a>
+                    <div className="flex-1">
+                      {discordIntegration ? (
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-600 mb-2">
+                            <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="text-[#5865F2] hover:underline">
+                              discord.com
+                            </a>
+                          </p>
+                          <p className="text-sm text-gray-700 font-medium mb-1">
+                            {discordIntegration.username}#{discordIntegration.discriminator}
+                          </p>
+                          {discordIntegration.verified ? (
+                            <div className="flex items-center gap-1.5 text-green-700">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold">Verified Member</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 text-yellow-700">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold">Not in Server</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 mb-4">
+                          Connect your Discord account to verify your membership in the Code for All server.
                         </p>
-                        <p className="text-sm text-gray-700 font-medium mb-1">
-                          {discordIntegration.username}#{discordIntegration.discriminator}
-                        </p>
-                        {discordIntegration.verified ? (
-                          <div className="flex items-center gap-1.5 text-green-700">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-xs font-semibold">Verified Member</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-yellow-700">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-xs font-semibold">Not in Server</span>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-600 mb-4">
-                        Connect your Discord account to verify your membership in the Code for All server.
-                      </p>
-                    )}
+                      )}
+                    </div>
 
                     {/* Action Button */}
                     {discordIntegration ? (
                       <button
                         onClick={handleVerifyDiscord}
-                        className="w-full px-4 py-2.5 bg-gray-100 text-gray-800 text-sm font-medium rounded-lg hover:bg-gray-200 transition"
+                        className="w-full px-4 py-2.5 bg-gray-100 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition"
                       >
                         Refresh Status
                       </button>
                     ) : (
                       <button
                         onClick={handleConnectDiscord}
-                        className="w-full px-4 py-2.5 bg-[#5865F2] text-white font-medium rounded-lg hover:bg-[#4752C4] transition"
+                        className="w-full px-4 py-2.5 bg-[#5865F2] text-white font-medium rounded-lg border border-[#4752C4] hover:bg-[#4752C4] hover:border-[#3c45a3] transition"
                       >
                         Connect
                       </button>
                     )}
                   </div>
 
-                  {/* GitHub Placeholder Card */}
-                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 opacity-50 relative">
-                    <div className="absolute top-4 right-4">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full">
-                        Coming Soon
-                      </span>
-                    </div>
+                  {/* GitHub Integration Card */}
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all relative flex flex-col">
+                    {/* Connected Badge */}
+                    {githubIntegration && (
+                      <div className="absolute top-4 right-4">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                          Connected
+                        </span>
+                      </div>
+                    )}
 
                     <div className="w-16 h-16 bg-gray-800 rounded-xl flex items-center justify-center mb-4">
                       <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -2300,20 +2441,58 @@ export default function ProfilePage() {
                     </div>
 
                     <h3 className="text-xl font-bold text-gray-900 mb-2">GitHub</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Get rewarded when you contribute to the Oyster codebase.
-                    </p>
 
-                    <button
-                      disabled
-                      className="w-full px-4 py-2.5 bg-gray-100 text-gray-500 font-medium rounded-lg cursor-not-allowed"
-                    >
-                      Connect
-                    </button>
+                    <div className="flex-1">
+                      {githubIntegration ? (
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-600 mb-2">
+                            <a href={githubIntegration.profile_url} target="_blank" rel="noopener noreferrer" className="text-gray-800 hover:underline">
+                              @{githubIntegration.username}
+                            </a>
+                          </p>
+                          {githubIntegration.top_repos && githubIntegration.top_repos.length > 0 ? (
+                            <div className="text-green-700 flex items-center gap-1.5 mb-2">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold">{githubIntegration.top_repos.length} Top Repo{githubIntegration.top_repos.length !== 1 ? 's' : ''} Selected</span>
+                            </div>
+                          ) : (
+                            <div className="text-yellow-700 flex items-center gap-1.5 mb-2">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold">No Repos Selected</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 mb-4">
+                          Showcase your top 3 repositories on your profile.
+                        </p>
+                      )}
+                    </div>
+
+                    {githubIntegration ? (
+                      <button
+                        onClick={handleSelectRepos}
+                        disabled={loadingRepos}
+                        className="w-full px-4 py-2.5 bg-gray-100 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition disabled:opacity-50"
+                      >
+                        {loadingRepos ? "Loading..." : "Update Repositories"}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleConnectGithub}
+                        className="w-full px-4 py-2.5 bg-gray-800 text-white font-medium rounded-lg border border-gray-700 hover:bg-gray-700 hover:border-gray-600 transition"
+                      >
+                        Connect
+                      </button>
+                    )}
                   </div>
 
                   {/* LinkedIn Placeholder Card */}
-                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 opacity-50 relative">
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 opacity-50 relative flex flex-col">
                     <div className="absolute top-4 right-4">
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full">
                         Coming Soon
@@ -2327,13 +2506,16 @@ export default function ProfilePage() {
                     </div>
 
                     <h3 className="text-xl font-bold text-gray-900 mb-2">LinkedIn</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Import your professional profile and work history.
-                    </p>
+                    
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-600 mb-4">
+                        Import your professional profile and work history.
+                      </p>
+                    </div>
 
                     <button
                       disabled
-                      className="w-full px-4 py-2.5 bg-gray-100 text-gray-500 font-medium rounded-lg cursor-not-allowed"
+                      className="w-full px-4 py-2.5 bg-gray-100 text-gray-500 font-medium rounded-lg border border-gray-300 cursor-not-allowed"
                     >
                       Connect
                     </button>
@@ -2474,6 +2656,132 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GitHub Repository Selection Modal */}
+      {showRepoModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Select Top 3 Repositories</h3>
+                <p className="text-sm text-gray-600 mt-1">Choose up to 3 repositories to showcase on your profile</p>
+              </div>
+              <button
+                onClick={() => setShowRepoModal(false)}
+                disabled={savingRepos}
+                className="text-gray-400 hover:text-gray-600 transition disabled:opacity-50"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {githubRepos.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                  <p className="text-gray-600">No repositories found</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {githubRepos.filter(repo => !repo.private).map((repo) => {
+                    const isSelected = selectedRepos.includes(repo.full_name);
+                    const selectionIndex = selectedRepos.indexOf(repo.full_name);
+                    
+                    return (
+                      <button
+                        key={repo.id}
+                        onClick={() => handleToggleRepo(repo.full_name)}
+                        disabled={!isSelected && selectedRepos.length >= 3}
+                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                          isSelected
+                            ? "border-indigo-500 bg-indigo-50"
+                            : "border-gray-200 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-semibold text-gray-900 truncate">{repo.name}</h4>
+                              {isSelected && (
+                                <span className="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold">
+                                  {selectionIndex + 1}
+                                </span>
+                              )}
+                            </div>
+                            {repo.description && (
+                              <p className="text-sm text-gray-600 line-clamp-2 mb-2">{repo.description}</p>
+                            )}
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              {repo.language && (
+                                <span className="flex items-center gap-1">
+                                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                  {repo.language}
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                {repo.stargazers_count}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                                {repo.forks_count}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {isSelected ? (
+                              <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+              <div className="text-sm text-gray-600">
+                {selectedRepos.length} of 3 selected
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowRepoModal(false)}
+                  disabled={savingRepos}
+                  className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveRepos}
+                  disabled={savingRepos || selectedRepos.length === 0}
+                  className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingRepos ? "Saving..." : "Save Selection"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

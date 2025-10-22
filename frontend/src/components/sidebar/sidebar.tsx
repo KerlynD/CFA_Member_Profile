@@ -26,44 +26,36 @@ export default function Sidebar() {
     };
 
     return (
-        <aside className="left-0 h-screen w-[250px] flex-col items-start gap-4 overflow-auto border-r border-r-gray-200 p-6 md:flex hidden text-xl">
-            <div className="p-2 flex items-center gap-2">
+        <aside className="fixed top-0 left-0 h-screen w-[250px] flex-col items-start gap-4 overflow-auto border-r border-r-gray-200 p-6 md:flex hidden text-xl bg-white z-40">
+            <Link href="/dashboard" className="p-2 flex items-center gap-2 hover:bg-gray-100 rounded-lg transition">
                 <Image src="/assets/codeforall.svg" alt="Code for All logo" width={24} height={24} className="flex-shrink-0" style={{ width: '24px', height: '24px' }}/>
-                <span className="text-base font-semibold">Code for All</span>
-            </div>
+                <span className="text-lg font-semibold">Code for All</span>
+            </Link>
             <nav className="w-full p-2 mt-5">
                 <ul className="flex flex-col gap-1">
                     <li><Link aria-current={ pathname.endsWith("/directory") ? "page" : undefined}
-                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/directory">
+                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 aria-[current='page']:bg-gradient-to-r aria-[current='page']:from-gray-900 aria-[current='page']:to-gray-700 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/directory">
                         <Image src="/assets/directory.svg"
                                alt="Directory icon"
                                width={20}
                                height={20} /> Directory
                     </Link></li>
                     <li><Link aria-current={ pathname.endsWith("/events") ? "page" : undefined}
-                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
+                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 aria-[current='page']:bg-gradient-to-r aria-[current='page']:from-gray-900 aria-[current='page']:to-gray-700 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
                               href="events">
                         <Image src="/assets/events.svg"
                                alt="Events icon"
                                width={20} height={20}/>Events
                     </Link></li>
                     <li><Link aria-current={ pathname.endsWith("/offers") ? "page" : undefined}
-                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/offers">
+                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 aria-[current='page']:bg-gradient-to-r aria-[current='page']:from-gray-900 aria-[current='page']:to-gray-700 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/offers">
                         <Image src="/assets/money-check.svg"
                                alt="Offers icon"
                                width={20}
                                height={20} /> Offers
                     </Link></li>
-                    <li><Link aria-current={ pathname.endsWith("/resources") ? "page" : undefined}
-                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
-                              href="/dashboard/resources">
-                        <Image src="/assets/resources.svg"
-                               alt="Resources icon"
-                               width={20}
-                               height={20} /> Resources
-                    </Link></li>
                     <li><Link aria-current={ pathname.endsWith("/leetcodeleaderboard") ? "page" : undefined}
-                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
+                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 aria-[current='page']:bg-gradient-to-r aria-[current='page']:from-gray-900 aria-[current='page']:to-gray-700 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
                               href="/dashboard/leetcodeleaderboard">
                         <Image src="/assets/leetcode.svg"
                                alt="LeetCode icon"
@@ -71,7 +63,7 @@ export default function Sidebar() {
                                height={20} />Leaderboard
                     </Link></li>
                     <li><Link aria-current={ pathname.endsWith("/profile") ? "page" : undefined}
-                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/profile">
+                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 aria-[current='page']:bg-gradient-to-r aria-[current='page']:from-gray-900 aria-[current='page']:to-gray-700 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/profile">
                         <Image src="/assets/profile.svg"
                                alt="Profile icon"
                                width={20}
@@ -84,7 +76,7 @@ export default function Sidebar() {
             <div className="p-2 w-full mt-auto">
                 <button 
                     onClick={handleLogout}
-                    className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10" 
+                    className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200" 
                     type="button"
                 >
                     <Image src="/assets/logout.svg" alt="Logout icon" width={20} height={20} style={{ width: 'auto', height: 'auto' }}/>

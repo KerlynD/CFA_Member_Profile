@@ -25,6 +25,7 @@ func main() {
 	handlers.InitOAuth()
 	handlers.InitDiscordOAuth()
 	handlers.InitLinkedinOAuth()
+	handlers.InitGithubOAuth()
 
 	app := fiber.New()
 

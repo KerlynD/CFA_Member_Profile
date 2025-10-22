@@ -114,13 +114,37 @@ export default function LeetcodeLeaderboard() {
   const [loadingRight, setLoadingRight] = useState(true);
 
   useEffect(() => {
+    const CACHE_KEY = "leetcode_card_cache";
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
     const fetchCard = async () => {
       try {
+        // Check cache first
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData);
+          const age = Date.now() - timestamp;
+          
+          // If cache is still fresh, use it
+          if (age < CACHE_DURATION) {
+            setCard(data);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Cache miss or expired - fetch fresh data
         const res = await fetch("http://localhost:8080/api/leetcode/lookup", {
           credentials: "include",
         });
         const data = await res.json();
         setCard(data);
+        
+        // Cache the response
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          data,
+          timestamp: Date.now()
+        }));
       } catch (e) {
         setCard({ available: false, message: "Lookup currently down" });
       } finally {

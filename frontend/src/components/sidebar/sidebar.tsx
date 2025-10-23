@@ -33,8 +33,19 @@ export default function Sidebar() {
             </div>
             <nav className="w-full p-2 mt-5">
                 <ul className="flex flex-col gap-1">
+                    <li><Link aria-current={ pathname.endsWith("/profile") ? "page" : undefined}
+                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
+                              href="/dashboard/home">
+                        <Image src="/assets/profile.svg"
+                               alt="Profile icon"
+                               width={20}
+                               height={20}
+                               className="flex-shrink-0"
+                               style={{ width: '20px', height: '20px' }}/>Home
+                    </Link></li>
                     <li><Link aria-current={ pathname.endsWith("/directory") ? "page" : undefined}
-                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/directory">
+                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
+                              href="/dashboard/directory">
                         <Image src="/assets/directory.svg"
                                alt="Directory icon"
                                width={20}
@@ -42,25 +53,18 @@ export default function Sidebar() {
                     </Link></li>
                     <li><Link aria-current={ pathname.endsWith("/events") ? "page" : undefined}
                               className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
-                              href="events">
+                              href="/dashboard/events">
                         <Image src="/assets/events.svg"
                                alt="Events icon"
                                width={20} height={20}/>Events
                     </Link></li>
                     <li><Link aria-current={ pathname.endsWith("/offers") ? "page" : undefined}
-                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white" href="/dashboard/offers">
+                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
+                              href="/dashboard/offers">
                         <Image src="/assets/money-check.svg"
                                alt="Offers icon"
                                width={20}
                                height={20} /> Offers
-                    </Link></li>
-                    <li><Link aria-current={ pathname.endsWith("/resources") ? "page" : undefined}
-                              className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
-                              href="/dashboard/resources">
-                        <Image src="/assets/resources.svg"
-                               alt="Resources icon"
-                               width={20}
-                               height={20} /> Resources
                     </Link></li>
                     <li><Link aria-current={ pathname.endsWith("/leetcodeleaderboard") ? "page" : undefined}
                               className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-emerald-900/10 hover:bg-opacity-10 active:bg-emerald-900/20 aria-[current='page']:bg-emerald-900/75 aria-[current='page']:text-white aria-[current='page']:hover:text-white"

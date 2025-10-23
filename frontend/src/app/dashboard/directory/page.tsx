@@ -41,6 +41,8 @@ const toOptions = (values: (string| undefined)[]) =>
 const MOCK_USERS: User[] = [
     { id: 1, name: "Diego Martinez", email: "diego@ex.com", headline: "Web Dev | CS @ UTEP", school: "UTEP", company: "GDG on Campus", location: "TX", picture: "https://i.pravatar.cc/100?img=11" },
     { id: 2, name: "Adam Romero", email: "adam@ex.com", headline: "CS @ USC | Prev @ Meta", school: "USC", company: "Meta", location: "CA", picture: "https://i.pravatar.cc/100?img=12" },
+    { id: 3, name: "Akali", email: "Midlane@ex.com", headline: "Assasin  | CS @ League of Legends", school: "League", company: "GDG on Campus", location: "TX", picture: "https://i.pravatar.cc/100?img=10" },
+    { id: 4, name: "Amumu", email: "Jungle@ex.com", headline: "Jungle | Prev @ Meta", school: "USC", company: "Meta", location: "CA", picture: "https://i.pravatar.cc/100?img=9" },
     // ...
 ];
 export default function Directory() {
@@ -89,7 +91,7 @@ export default function Directory() {
     }, [allUsers, query, location, school, companies]);
 
     return (
-        <div className="flex flex-col p-2 w-full">
+        <div className="flex flex-col  w-full">
             <div className="flex flex-row w-full items-center">
                 <h1 className="text-2xl mr-3" >Directory</h1>
                 <Image className="" src="/nextjs/folder-svgrepo-com.svg" alt="" width={35} height={35} />
@@ -102,7 +104,7 @@ export default function Directory() {
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Search by name or email"
-                                className="w-80 rounded-full border border-gray-300 bg-white px-4 py-2 outline-none focus:border-emerald-700"
+                                className="w-[100px] sm:w-full rounded-full border border-gray-300 bg-white px-4 py-2 outline-none focus:border-emerald-700"
                             />
                         </div>
 
@@ -111,6 +113,27 @@ export default function Directory() {
                             <Select className="w-52" placeholder="Company" styles={customStyles} options={companyOptions} onChange={(e) => setCompanies(e)} isClearable />
                             <Select className="w-52" placeholder="Location" styles={customStyles} options={locationOptions} onChange={(e) => setLocation(e)} isClearable />
                         </div>
+
+                        <ul className="grid grid-cols-1 gap-4 md:grid-cols-1 lg:grid-cols-2 ">
+                            {filtered.map((u) => (
+                                <li key={u.id} className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                                    <img
+                                        src={u.picture ?? "https://i.pravatar.cc/100"}
+                                        alt={u.name}
+                                        className="h-12 w-12 rounded-full object-cover"
+                                    />
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <p className="truncate text-lg font-semibold">{u.name}</p>
+                                            {/* optional: small badges */}
+                                            {u.school && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">{u.school}</span>}
+                                        </div>
+                                        <p className="truncate text-gray-600">{u.headline}</p>
+                                        <p className="truncate text-gray-500 text-sm">{u.email}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
             </main>
         </div>

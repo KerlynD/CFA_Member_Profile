@@ -30,12 +30,18 @@ func RegisterRoutes(app *fiber.App) {
 
 	// Users
 	app.Get("/api/users", handlers.GetUsers)
+	app.Get("/api/users/:id", handlers.GetUserProfile)
+	app.Get("/api/users/:id/education", handlers.GetUserEducation)
+	app.Get("/api/users/:id/work", handlers.GetUserWork)
+	app.Get("/api/users/:id/events", handlers.GetUserEvents)
+	app.Get("/api/users/:id/github", handlers.GetUserGithub)
 
 	// Offers
 	app.Get("/api/offers", handlers.GetOffers)
 
 	// Events
 	app.Get("/api/events", handlers.GetEvents)
+	app.Get("/api/events/:id/attendees", handlers.GetEventAttendees)
 
 	// --- PROTECTED ENDPOINTS ---
 	auth := app.Group("/api", middleware.RequireAuth)

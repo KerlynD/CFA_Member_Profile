@@ -19,6 +19,10 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/api/auth/discord/login", handlers.DiscordLogin)
 	app.Get("/api/auth/discord/callback", handlers.DiscordCallback)
 
+	// GitHub Auth
+	app.Get("/api/auth/github/login", handlers.GithubLogin)
+	app.Get("/api/auth/github/callback", handlers.GithubCallback)
+
 	// Logout
 	app.Get("/api/logout", handlers.Logout)
 
@@ -43,16 +47,26 @@ func RegisterRoutes(app *fiber.App) {
 	// Profile - IMPORTANT: Specific routes must come before parameterized routes
 	auth.Get("/me", handlers.GetCurrentUser)
 	auth.Put("/users/me", handlers.UpdateMyProfile)
+	auth.Post("/users/me/picture", handlers.UploadProfilePicture)
 	auth.Put("/users/:id", handlers.UpdateUser)
 
 	// Integrations
 	auth.Get("/integrations", handlers.GetIntegrationsOverview)
+	auth.Post("/integrations/discord/verify", handlers.VerifyDiscordMembership)
+
+	// LeetCode Leaderboard lookup (read-only)
+	auth.Get("/leetcode/lookup", handlers.GetLeetCodeStats)
 
 	// Offers
 	auth.Post("/offers", handlers.AddOffer)
 
 	// Discord Integration
 	auth.Get("/integrations/discord", handlers.GetDiscordIntegration)
+
+	// GitHub Integration
+	auth.Get("/integrations/github", handlers.GetGithubIntegration)
+	auth.Get("/integrations/github/repos", handlers.GetGithubRepos)
+	auth.Post("/integrations/github/repos", handlers.SaveTopRepos)
 
 	// Work History
 	auth.Post("/work_history", handlers.AddWorkHistory)

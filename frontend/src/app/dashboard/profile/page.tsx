@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Cropper from "react-easy-crop";
+import type { Area } from "react-easy-crop";
 
 interface User {
   id: number;
@@ -41,6 +43,40 @@ interface EducationHistory {
   created_at: string;
 }
 
+interface DiscordIntegration {
+  id: number;
+  user_id: number;
+  discord_id: string;
+  username: string;
+  discriminator: string;
+  avatar_url: string;
+  verified: boolean;
+  joined_at: string;
+}
+
+interface GithubIntegration {
+  id: number;
+  user_id: number;
+  github_id: string;
+  username: string;
+  avatar_url: string;
+  profile_url: string;
+  top_repos: string[];
+  joined_at: string;
+}
+
+interface GithubRepo {
+  id: number;
+  name: string;
+  full_name: string;
+  description: string;
+  language: string;
+  stargazers_count: number;
+  forks_count: number;
+  html_url: string;
+  private: boolean;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -48,8 +84,12 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("general");
-  const [showPhotoUrlInput, setShowPhotoUrlInput] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState("");
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // Work History state
@@ -91,6 +131,17 @@ export default function ProfilePage() {
     description: "",
   });
 
+  // Integrations state
+  const [discordIntegration, setDiscordIntegration] = useState<DiscordIntegration | null>(null);
+  const [loadingDiscord, setLoadingDiscord] = useState(false);
+  const [githubIntegration, setGithubIntegration] = useState<GithubIntegration | null>(null);
+  const [loadingGithub, setLoadingGithub] = useState(false);
+  const [showRepoModal, setShowRepoModal] = useState(false);
+  const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
+  const [selectedRepos, setSelectedRepos] = useState<string[]>([]);
+  const [loadingRepos, setLoadingRepos] = useState(false);
+  const [savingRepos, setSavingRepos] = useState(false);
+
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -111,6 +162,19 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchUser();
+    fetchDiscordIntegration(); // Fetch Discord status on page load for verified badge
+    fetchGithubIntegration(); // Fetch GitHub status on page load
+    
+    // Check for GitHub OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("github_connected") === "true") {
+      setSuccessMessage("GitHub connected successfully! Select your top 3 repositories.");
+      setActiveTab("integrations");
+      // Clean up URL
+      window.history.replaceState({}, "", "/dashboard/profile?tab=integrations");
+      // Load repos and show modal
+      handleSelectRepos();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -119,7 +183,12 @@ export default function ProfilePage() {
       fetchWorkHistory();
     } else if (activeTab === "educationHistory") {
       fetchEducationHistory();
+    } else if (activeTab === "integrations") {
+      // Refresh integrations when tab is opened
+      fetchDiscordIntegration();
+      fetchGithubIntegration();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const fetchUser = async () => {
@@ -573,6 +642,263 @@ export default function ProfilePage() {
     }
   };
 
+  // Discord Integration Functions
+  const fetchDiscordIntegration = async () => {
+    setLoadingDiscord(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/discord", {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setDiscordIntegration(data);
+      } else {
+        // Not linked yet - this is fine
+        setDiscordIntegration(null);
+      }
+    } catch (error) {
+      console.error("Error fetching Discord integration:", error);
+    } finally {
+      setLoadingDiscord(false);
+    }
+  };
+
+  const handleConnectDiscord = () => {
+    // Redirect to Discord OAuth
+    window.location.href = "http://localhost:8080/api/auth/discord/login";
+  };
+
+  const handleVerifyDiscord = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/discord/verify", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Refresh Discord integration to show updated status
+        await fetchDiscordIntegration();
+        
+        if (data.verified) {
+          setSuccessMessage("Verified! You are a member of the server.");
+        } else {
+          setSuccessMessage("Not verified. Please join the Discord server and try again.");
+        }
+        setTimeout(() => setSuccessMessage(null), 5000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Verification failed"}`);
+      }
+    } catch (error) {
+      console.error("Error verifying Discord:", error);
+      alert("Failed to verify Discord membership");
+    }
+  };
+
+  // GitHub Integration Functions
+  const fetchGithubIntegration = async () => {
+    setLoadingGithub(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/github", {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setGithubIntegration(data);
+        setSelectedRepos(data.top_repos || []);
+      } else {
+        // Not linked yet - this is fine
+        setGithubIntegration(null);
+        setSelectedRepos([]);
+      }
+    } catch (error) {
+      console.error("Error fetching GitHub integration:", error);
+    } finally {
+      setLoadingGithub(false);
+    }
+  };
+
+  const handleConnectGithub = () => {
+    // Redirect to GitHub OAuth
+    window.location.href = "http://localhost:8080/api/auth/github/login";
+  };
+
+  const handleSelectRepos = async () => {
+    // Fetch user's repositories
+    setLoadingRepos(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/github/repos", {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setGithubRepos(data);
+        setShowRepoModal(true);
+      } else {
+        alert("Failed to fetch repositories");
+      }
+    } catch (error) {
+      console.error("Error fetching repos:", error);
+      alert("Failed to fetch repositories");
+    } finally {
+      setLoadingRepos(false);
+    }
+  };
+
+  const handleToggleRepo = (repoFullName: string) => {
+    if (selectedRepos.includes(repoFullName)) {
+      // Remove repo
+      setSelectedRepos(selectedRepos.filter(r => r !== repoFullName));
+    } else {
+      // Add repo (max 3)
+      if (selectedRepos.length < 3) {
+        setSelectedRepos([...selectedRepos, repoFullName]);
+      }
+    }
+  };
+
+  const handleSaveRepos = async () => {
+    setSavingRepos(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/github/repos", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ repos: selectedRepos }),
+      });
+
+      if (res.ok) {
+        await fetchGithubIntegration();
+        setShowRepoModal(false);
+        setSuccessMessage("Top repositories saved successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to save repositories"}`);
+      }
+    } catch (error) {
+      console.error("Error saving repos:", error);
+      alert("Failed to save repositories");
+    } finally {
+      setSavingRepos(false);
+    }
+  };
+
+  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
+      return;
+    }
+
+    // Read file and set as selected image for cropping
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const createCroppedImage = async (imageSrc: string, pixelCrop: Area): Promise<Blob> => {
+    const image = new window.Image();
+    image.src = imageSrc;
+    
+    return new Promise((resolve, reject) => {
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"));
+          return;
+        }
+
+        canvas.width = pixelCrop.width;
+        canvas.height = pixelCrop.height;
+
+        ctx.drawImage(
+          image,
+          pixelCrop.x,
+          pixelCrop.y,
+          pixelCrop.width,
+          pixelCrop.height,
+          0,
+          0,
+          pixelCrop.width,
+          pixelCrop.height
+        );
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Failed to create blob"));
+          }
+        }, "image/jpeg", 0.95);
+      };
+      
+      image.onerror = () => reject(new Error("Failed to load image"));
+    });
+  };
+
+  const handlePhotoUpload = async () => {
+    if (!selectedImage || !croppedAreaPixels) return;
+
+    setUploadingPhoto(true);
+    try {
+      // Create cropped image blob
+      const croppedBlob = await createCroppedImage(selectedImage, croppedAreaPixels);
+      
+      // Create form data with cropped image
+      const formData = new FormData();
+      formData.append("file", croppedBlob, "profile-photo.jpg");
+
+      const res = await fetch("http://localhost:8080/api/users/me/picture", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (res.ok) {
+        // Refresh user data to show new picture
+        await fetchUser();
+        setShowPhotoModal(false);
+        setSelectedImage(null);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+        setSuccessMessage("Profile picture updated successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to upload image"}`);
+      }
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      alert("Failed to upload photo");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     
@@ -655,8 +981,12 @@ export default function ProfilePage() {
       {/* Header Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
         <div className="flex items-start gap-6">
-          <div className="relative group">
-            <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+          <button
+            onClick={() => setShowPhotoModal(true)}
+            className="relative group cursor-pointer"
+            title="Click to change profile picture"
+          >
+            <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 ring-4 ring-transparent group-hover:ring-indigo-500 transition-all">
               {user.picture ? (
                 <Image
                   src={user.picture}
@@ -671,63 +1001,32 @@ export default function ProfilePage() {
                   </svg>
                 </div>
               )}
+              {/* Overlay on hover */}
+              <div className="absolute inset-0 pointer-events-none bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
+                <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
             </div>
-            <button
-              onClick={() => setShowPhotoUrlInput(!showPhotoUrlInput)}
-              className="absolute bottom-0 right-0 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-2 shadow-lg transition"
-              title="Change photo"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
-          </div>
+          </button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">
-              {user.name || "No name set"}
-            </h1>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-3xl font-bold text-gray-900">
+                {user.name || "No name set"}
+              </h1>
+              {discordIntegration?.verified && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 text-sm font-semibold rounded-full border border-green-200">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Verified
+                </span>
+              )}
+            </div>
             <p className="text-gray-600 mb-2">
               {user.headline || "No headline set"}
             </p>
-            
-            {showPhotoUrlInput && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">
-                  Your photo is synced from your Google account. To change it, update your Google profile picture or paste a URL below:
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={photoUrl}
-                    onChange={(e) => setPhotoUrl(e.target.value)}
-                    placeholder="https://example.com/photo.jpg"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-                  />
-                  <button
-                    onClick={async () => {
-                      if (!photoUrl) return;
-                      // TODO: Implement update photo URL endpoint
-                      alert("Photo URL update coming soon! For now, your Google photo will be used.");
-                      setShowPhotoUrlInput(false);
-                      setPhotoUrl("");
-                    }}
-                    className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition"
-                  >
-                    Update
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowPhotoUrlInput(false);
-                      setPhotoUrl("");
-                    }}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -775,6 +1074,19 @@ export default function ProfilePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
               Education History
+            </button>
+            <button
+              onClick={() => setActiveTab("integrations")}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                activeTab === "integrations"
+                  ? "border-indigo-500 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Integrations
             </button>
           </nav>
         </div>
@@ -2002,8 +2314,478 @@ export default function ProfilePage() {
               )}
             </div>
           )}
+
+          {activeTab === "integrations" && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Integrations</h2>
+              <p className="text-gray-600 mb-8">
+                Connect your accounts to unlock additional features and verify your membership.
+              </p>
+
+              {/* Success Message */}
+              {successMessage && (
+                <div className={`mb-6 p-4 rounded-lg flex items-center gap-2 ${
+                  successMessage.startsWith("Error") || successMessage.startsWith("Not verified")
+                    ? "bg-yellow-50 text-yellow-800 border border-yellow-200" 
+                    : "bg-green-50 text-green-800 border border-green-200"
+                }`}>
+                  {successMessage.startsWith("Verified") && (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {successMessage.startsWith("Not verified") && (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span className="font-medium">{successMessage}</span>
+                </div>
+              )}
+
+              {loadingDiscord ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-600">Loading integrations...</div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Discord Integration Card */}
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all relative flex flex-col">
+                    {/* Connected Badge */}
+                    {discordIntegration && (
+                      <div className="absolute top-4 right-4">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                          Connected
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Discord Logo */}
+                    <div className="w-16 h-16 bg-[#5865F2] rounded-xl flex items-center justify-center mb-4">
+                      <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                      </svg>
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Discord</h3>
+
+                    {/* Description */}
+                    <div className="flex-1">
+                      {discordIntegration ? (
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-600 mb-2">
+                            <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="text-[#5865F2] hover:underline">
+                              discord.com
+                            </a>
+                          </p>
+                          <p className="text-sm text-gray-700 font-medium mb-1">
+                            {discordIntegration.username}#{discordIntegration.discriminator}
+                          </p>
+                          {discordIntegration.verified ? (
+                            <div className="flex items-center gap-1.5 text-green-700">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold">Verified Member</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 text-yellow-700">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold">Not in Server</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 mb-4">
+                          Connect your Discord account to verify your membership in the Code for All server.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Action Button */}
+                    {discordIntegration ? (
+                      <button
+                        onClick={handleVerifyDiscord}
+                        className="w-full px-4 py-2.5 bg-gray-100 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition"
+                      >
+                        Refresh Status
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleConnectDiscord}
+                        className="w-full px-4 py-2.5 bg-[#5865F2] text-white font-medium rounded-lg border border-[#4752C4] hover:bg-[#4752C4] hover:border-[#3c45a3] transition"
+                      >
+                        Connect
+                      </button>
+                    )}
+                  </div>
+
+                  {/* GitHub Integration Card */}
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all relative flex flex-col">
+                    {/* Connected Badge */}
+                    {githubIntegration && (
+                      <div className="absolute top-4 right-4">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                          Connected
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="w-16 h-16 bg-gray-800 rounded-xl flex items-center justify-center mb-4">
+                      <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">GitHub</h3>
+
+                    <div className="flex-1">
+                      {githubIntegration ? (
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-600 mb-2">
+                            <a href={githubIntegration.profile_url} target="_blank" rel="noopener noreferrer" className="text-gray-800 hover:underline">
+                              @{githubIntegration.username}
+                            </a>
+                          </p>
+                          {githubIntegration.top_repos && githubIntegration.top_repos.length > 0 ? (
+                            <div className="text-green-700 flex items-center gap-1.5 mb-2">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold">{githubIntegration.top_repos.length} Top Repo{githubIntegration.top_repos.length !== 1 ? 's' : ''} Selected</span>
+                            </div>
+                          ) : (
+                            <div className="text-yellow-700 flex items-center gap-1.5 mb-2">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold">No Repos Selected</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 mb-4">
+                          Showcase your top 3 repositories on your profile.
+                        </p>
+                      )}
+                    </div>
+
+                    {githubIntegration ? (
+                      <button
+                        onClick={handleSelectRepos}
+                        disabled={loadingRepos}
+                        className="w-full px-4 py-2.5 bg-gray-100 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition disabled:opacity-50"
+                      >
+                        {loadingRepos ? "Loading..." : "Update Repositories"}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleConnectGithub}
+                        className="w-full px-4 py-2.5 bg-gray-800 text-white font-medium rounded-lg border border-gray-700 hover:bg-gray-700 hover:border-gray-600 transition"
+                      >
+                        Connect
+                      </button>
+                    )}
+                  </div>
+
+                  {/* LinkedIn Placeholder Card */}
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 opacity-50 relative flex flex-col">
+                    <div className="absolute top-4 right-4">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full">
+                        Coming Soon
+                      </span>
+                    </div>
+
+                    <div className="w-16 h-16 bg-[#0A66C2] rounded-xl flex items-center justify-center mb-4">
+                      <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                      </svg>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">LinkedIn</h3>
+                    
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-600 mb-4">
+                        Import your professional profile and work history.
+                      </p>
+                    </div>
+
+                    <button
+                      disabled
+                      className="w-full px-4 py-2.5 bg-gray-100 text-gray-500 font-medium rounded-lg border border-gray-300 cursor-not-allowed"
+                    >
+                      Connect
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Profile Picture Modal */}
+      {showPhotoModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-xl font-bold text-gray-900">Profile Picture</h3>
+              <button
+                onClick={() => {
+                  setShowPhotoModal(false);
+                  setSelectedImage(null);
+                  setCrop({ x: 0, y: 0 });
+                  setZoom(1);
+                }}
+                disabled={uploadingPhoto}
+                className="text-gray-400 hover:text-gray-600 transition disabled:opacity-50"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {!selectedImage ? (
+                // Show current photo and upload button
+                <div className="space-y-6">
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-48 h-48 rounded-full overflow-hidden bg-gray-100 mb-4">
+                      {user?.picture ? (
+                        <Image
+                          src={user.picture}
+                          alt={user.name || "Profile"}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-gray-600 text-center mb-4">
+                      Upload a new profile picture. You'll be able to crop and adjust it before saving.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <div className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition">
+                        Choose New Photo
+                      </div>
+                    </label>
+                  </div>
+
+                  <p className="text-sm text-gray-500 text-center">
+                    Supported formats: JPG, PNG, GIF, WEBP (max 5MB)
+                  </p>
+                </div>
+              ) : (
+                // Show cropping interface
+                <div className="space-y-4">
+                  <p className="text-gray-700 font-medium text-center">
+                    Drag to adjust position, use slider to zoom
+                  </p>
+                  
+                  {/* Cropper Container */}
+                  <div className="relative w-full h-96 bg-black/20 rounded-lg overflow-hidden">
+                    <Cropper
+                      image={selectedImage}
+                      crop={crop}
+                      zoom={zoom}
+                      aspect={1}
+                      cropShape="round"
+                      showGrid={false}
+                      onCropChange={setCrop}
+                      onZoomChange={setZoom}
+                      onCropComplete={onCropComplete}
+                    />
+                  </div>
+
+                  {/* Zoom Slider */}
+                  <div className="px-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Zoom
+                    </label>
+                    <input
+                      type="range"
+                      min={1}
+                      max={3}
+                      step={0.1}
+                      value={zoom}
+                      onChange={(e) => setZoom(Number(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setSelectedImage(null);
+                        setCrop({ x: 0, y: 0 });
+                        setZoom(1);
+                      }}
+                      disabled={uploadingPhoto}
+                      className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
+                    >
+                      Choose Different Photo
+                    </button>
+                    <button
+                      onClick={handlePhotoUpload}
+                      disabled={uploadingPhoto}
+                      className="flex-1 px-4 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {uploadingPhoto ? "Uploading..." : "Save Photo"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GitHub Repository Selection Modal */}
+      {showRepoModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Select Top 3 Repositories</h3>
+                <p className="text-sm text-gray-600 mt-1">Choose up to 3 repositories to showcase on your profile</p>
+              </div>
+              <button
+                onClick={() => setShowRepoModal(false)}
+                disabled={savingRepos}
+                className="text-gray-400 hover:text-gray-600 transition disabled:opacity-50"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {githubRepos.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                  <p className="text-gray-600">No repositories found</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {githubRepos.filter(repo => !repo.private).map((repo) => {
+                    const isSelected = selectedRepos.includes(repo.full_name);
+                    const selectionIndex = selectedRepos.indexOf(repo.full_name);
+                    
+                    return (
+                      <button
+                        key={repo.id}
+                        onClick={() => handleToggleRepo(repo.full_name)}
+                        disabled={!isSelected && selectedRepos.length >= 3}
+                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                          isSelected
+                            ? "border-indigo-500 bg-indigo-50"
+                            : "border-gray-200 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-semibold text-gray-900 truncate">{repo.name}</h4>
+                              {isSelected && (
+                                <span className="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold">
+                                  {selectionIndex + 1}
+                                </span>
+                              )}
+                            </div>
+                            {repo.description && (
+                              <p className="text-sm text-gray-600 line-clamp-2 mb-2">{repo.description}</p>
+                            )}
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              {repo.language && (
+                                <span className="flex items-center gap-1">
+                                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                  {repo.language}
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                {repo.stargazers_count}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                                {repo.forks_count}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {isSelected ? (
+                              <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+              <div className="text-sm text-gray-600">
+                {selectedRepos.length} of 3 selected
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowRepoModal(false)}
+                  disabled={savingRepos}
+                  className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveRepos}
+                  disabled={savingRepos || selectedRepos.length === 0}
+                  className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingRepos ? "Saving..." : "Save Selection"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

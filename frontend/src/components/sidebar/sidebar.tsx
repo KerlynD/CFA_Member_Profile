@@ -35,6 +35,12 @@ export default function Sidebar() {
         };
     }, []);
 
+    // Update CSS custom property for sidebar width
+    useEffect(() => {
+        const sidebarWidth = isCollapsed || isSmallScreen ? '0px' : '250px';
+        document.documentElement.style.setProperty('--sidebar-width', sidebarWidth);
+    }, [isCollapsed, isSmallScreen]);
+
     const handleLogout = async () => {
         try {
             const response = await fetch("http://localhost:8080/api/logout", {
@@ -75,7 +81,7 @@ export default function Sidebar() {
     return (
         <>
             {/* Mobile Header */}
-            <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 p-4 z-50 flex items-center justify-between">
+            <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 p-4 z-40 flex items-center justify-between">
                 <Link href="/dashboard" className="flex items-center gap-2">
                     <Image src="/assets/codeforall.svg" alt="Code for All logo" width={24} height={24} className="flex-shrink-0" style={{ width: '24px', height: '24px' }} />
                     <span className="text-lg font-semibold">Code for All</span>
@@ -143,14 +149,14 @@ export default function Sidebar() {
             </aside>
 
             {/* Desktop Sidebar */}
-            <aside className={`hidden md:flex h-screen flex-col items-start gap-4 overflow-auto border-r border-r-gray-200 text-xl bg-white transition-all duration-300 ease-in-out relative ${
+            <aside className={`hidden md:flex fixed top-0 left-0 h-screen flex-col items-start gap-4 overflow-y-auto overflow-x-hidden border-r border-r-gray-200 text-xl bg-white transition-all duration-300 ease-in-out z-30 ${
                 isCollapsed ? 'w-0 p-0 border-r-0' : 'w-[250px] p-6'
             }`}>
                 {/* Toggle Button */}
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className={`absolute top-4 z-10 p-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition ${
-                        isCollapsed ? '-right-12' : '-right-12'
+                    className={`fixed top-4 z-40 p-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition ${
+                        isCollapsed ? 'left-4' : 'left-[226px]'
                     }`}
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

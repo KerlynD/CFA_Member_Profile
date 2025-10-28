@@ -154,7 +154,6 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    preferredName: "",
     headline: "",
     location: "",
     school: "",
@@ -222,7 +221,6 @@ export default function ProfilePage() {
       setFormData({
         firstName,
         lastName,
-        preferredName: "",
         headline: data.headline || "",
         location: data.location || "",
         school: data.school || "",
@@ -904,9 +902,6 @@ export default function ProfilePage() {
     
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-      const displayName = formData.preferredName 
-        ? `${formData.firstName} (${formData.preferredName}) ${formData.lastName}`.trim()
-        : fullName;
       
       const res = await fetch("http://localhost:8080/api/users/me", {
         method: "PUT",
@@ -915,7 +910,7 @@ export default function ProfilePage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: displayName,
+          name: fullName,
           headline: formData.headline,
           location: formData.location,
           school: formData.school,
@@ -977,6 +972,7 @@ export default function ProfilePage() {
   }
 
   return (
+    <>
     <div className="max-w-5xl mx-auto">
       {/* Header Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
@@ -1032,15 +1028,15 @@ export default function ProfilePage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-        <div className="border-b border-gray-200">
+      <div className="bg-white/70 backdrop-blur-xl rounded-xl shadow-lg border border-white/20 mb-6">
+        <div className="border-b border-white/10">
           <nav className="flex -mb-px">
             <button
               onClick={() => setActiveTab("general")}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-all duration-300 flex items-center gap-2 relative ${
                 activeTab === "general"
-                  ? "border-indigo-500 text-indigo-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-indigo-400 text-indigo-600 bg-gradient-to-r from-indigo-50/80 to-purple-50/80 backdrop-blur-sm"
+                  : "border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-200 hover:bg-gray-50/50"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1051,10 +1047,10 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => setActiveTab("workHistory")}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-all duration-300 flex items-center gap-2 relative ${
                 activeTab === "workHistory"
-                  ? "border-indigo-500 text-indigo-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-indigo-400 text-indigo-600 bg-gradient-to-r from-indigo-50/80 to-purple-50/80 backdrop-blur-sm"
+                  : "border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-200 hover:bg-gray-50/50"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1064,10 +1060,10 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => setActiveTab("educationHistory")}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-all duration-300 flex items-center gap-2 relative ${
                 activeTab === "educationHistory"
-                  ? "border-indigo-500 text-indigo-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-indigo-400 text-indigo-600 bg-gradient-to-r from-indigo-50/80 to-purple-50/80 backdrop-blur-sm"
+                  : "border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-200 hover:bg-gray-50/50"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1077,10 +1073,10 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => setActiveTab("integrations")}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-all duration-300 flex items-center gap-2 relative ${
                 activeTab === "integrations"
-                  ? "border-indigo-500 text-indigo-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-indigo-400 text-indigo-600 bg-gradient-to-r from-indigo-50/80 to-purple-50/80 backdrop-blur-sm"
+                  : "border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-200 hover:bg-gray-50/50"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1109,7 +1105,7 @@ export default function ProfilePage() {
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                    placeholder="Kerlyn"
+                    placeholder="John"
                   />
                 </div>
 
@@ -1124,32 +1120,10 @@ export default function ProfilePage() {
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                    placeholder="Difo"
+                    placeholder="Doe"
                   />
                 </div>
 
-                {/* Preferred Name */}
-                <div>
-                  <label htmlFor="preferredName" className="block text-sm font-medium text-gray-700 mb-2">
-                    Preferred Name
-                  </label>
-                  <p className="text-sm text-gray-500 mb-2">
-                    If you go by a different name, let us know here.
-                  </p>
-                  <input
-                    type="text"
-                    id="preferredName"
-                    value={formData.preferredName}
-                    onChange={(e) => setFormData({ ...formData, preferredName: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                    placeholder="Angel"
-                  />
-                  {(formData.firstName || formData.lastName) && (
-                    <p className="text-sm text-gray-500 mt-2">
-                      Your full name will appear as &quot;{formData.firstName} {formData.preferredName && `(${formData.preferredName}) `}{formData.lastName}&quot;.
-                    </p>
-                  )}
-                </div>
 
                 {/* Headline */}
                 <div>
@@ -1165,7 +1139,7 @@ export default function ProfilePage() {
                     value={formData.headline}
                     onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                    placeholder="Past SWE @ Capital One | Queens College '27"
+                    placeholder="Software Engineer @ Tech Company | University '25"
                   />
                 </div>
 
@@ -1183,7 +1157,7 @@ export default function ProfilePage() {
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                    placeholder="Jamaica, Queens, NY, USA"
+                    placeholder="New York, NY, USA"
                   />
                 </div>
               </div>
@@ -1214,9 +1188,9 @@ export default function ProfilePage() {
                 <button
                   onClick={handleSave}
                   disabled={saving || !formData.firstName || !formData.lastName || !formData.headline || !formData.location}
-                  className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-3 bg-gradient-to-r from-teal-500/90 to-emerald-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-teal-600/90 hover:to-emerald-600/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-400/50 focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
                 >
-                  {saving ? "Saving..." : "Save"}
+                  {saving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
@@ -1228,7 +1202,7 @@ export default function ProfilePage() {
                 <h2 className="text-2xl font-bold text-gray-900">Work History</h2>
                 <button
                   onClick={() => setShowAddWorkForm(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500/90 to-purple-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-indigo-600/90 hover:to-purple-600/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:ring-offset-2 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1237,407 +1211,7 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              {/* Add Work Form Modal */}
-              {showAddWorkForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                      <h3 className="text-xl font-bold text-gray-900">Add Work Experience</h3>
-                      <button
-                        onClick={() => {
-                          setShowAddWorkForm(false);
-                          setCurrentlyWorking(false);
-                          setWorkFormData({
-                            company: "",
-                            title: "",
-                            startMonth: "",
-                            startYear: "",
-                            endMonth: "",
-                            endYear: "",
-                            location: "",
-                            description: "",
-                          });
-                        }}
-                        className="text-gray-400 hover:text-gray-600 transition"
-                      >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    <div className="p-6 space-y-5">
-                      {/* Company */}
-                      <div>
-                        <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
-                          Company <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="company"
-                          value={workFormData.company}
-                          onChange={(e) => setWorkFormData({ ...workFormData, company: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Capital One"
-                        />
-                      </div>
 
-                      {/* Title */}
-                      <div>
-                        <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 mb-2">
-                          Title <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="jobTitle"
-                          value={workFormData.title}
-                          onChange={(e) => setWorkFormData({ ...workFormData, title: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Software Engineer Intern"
-                        />
-                      </div>
-
-                      {/* Start Date */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Start Date <span className="text-red-500">*</span>
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <select
-                            value={workFormData.startMonth}
-                            onChange={(e) => setWorkFormData({ ...workFormData, startMonth: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          >
-                            <option value="">Month</option>
-                            {months.map(month => (
-                              <option key={month} value={month}>{month}</option>
-                            ))}
-                          </select>
-                          <select
-                            value={workFormData.startYear}
-                            onChange={(e) => setWorkFormData({ ...workFormData, startYear: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          >
-                            <option value="">Year</option>
-                            {years.map(year => (
-                              <option key={year} value={year}>{year}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Currently Working Checkbox */}
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="currentlyWorking"
-                          checked={currentlyWorking}
-                          onChange={(e) => setCurrentlyWorking(e.target.checked)}
-                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                        />
-                        <label htmlFor="currentlyWorking" className="text-sm font-medium text-gray-700">
-                          I currently work here
-                        </label>
-                      </div>
-
-                      {/* End Date */}
-                      {!currentlyWorking && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            End Date
-                          </label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <select
-                              value={workFormData.endMonth}
-                              onChange={(e) => setWorkFormData({ ...workFormData, endMonth: e.target.value })}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                            >
-                              <option value="">Month</option>
-                              {months.map(month => (
-                                <option key={month} value={month}>{month}</option>
-                              ))}
-                            </select>
-                            <select
-                              value={workFormData.endYear}
-                              onChange={(e) => setWorkFormData({ ...workFormData, endYear: e.target.value })}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                            >
-                              <option value="">Year</option>
-                              {years.map(year => (
-                                <option key={year} value={year}>{year}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Location */}
-                      <div>
-                        <label htmlFor="workLocation" className="block text-sm font-medium text-gray-700 mb-2">
-                          Location
-                        </label>
-                        <input
-                          type="text"
-                          id="workLocation"
-                          value={workFormData.location}
-                          onChange={(e) => setWorkFormData({ ...workFormData, location: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="New York, NY • Hybrid"
-                        />
-                      </div>
-
-                      {/* Description */}
-                      <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                          Description
-                        </label>
-                        <p className="text-sm text-gray-500 mb-2">
-                          Add bullet points about your responsibilities and achievements. Start each line with &quot;•&quot; for bullet points.
-                        </p>
-                        <textarea
-                          id="description"
-                          value={workFormData.description}
-                          onChange={(e) => setWorkFormData({ ...workFormData, description: e.target.value })}
-                          rows={6}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
-                          placeholder="• Built a Java Spring Boot microservice&#10;• Created a Snowflake SQL pipeline&#10;• Designed REST APIs in Python"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
-                      <button
-                        onClick={() => {
-                          setShowAddWorkForm(false);
-                          setCurrentlyWorking(false);
-                          setWorkFormData({
-                            company: "",
-                            title: "",
-                            startMonth: "",
-                            startYear: "",
-                            endMonth: "",
-                            endYear: "",
-                            location: "",
-                            description: "",
-                          });
-                        }}
-                        className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleAddWork}
-                        disabled={savingWork || !workFormData.company || !workFormData.title || !workFormData.startMonth || !workFormData.startYear || (!currentlyWorking && (!workFormData.endMonth || !workFormData.endYear))}
-                        className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {savingWork ? "Adding..." : "Add Experience"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Edit Work Form Modal */}
-              {showEditWorkForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                      <h3 className="text-xl font-bold text-gray-900">Edit Work Experience</h3>
-                      <button
-                        onClick={() => {
-                          setShowEditWorkForm(false);
-                          setEditingWorkId(null);
-                          setCurrentlyWorking(false);
-                          setWorkFormData({
-                            company: "",
-                            title: "",
-                            startMonth: "",
-                            startYear: "",
-                            endMonth: "",
-                            endYear: "",
-                            location: "",
-                            description: "",
-                          });
-                        }}
-                        className="text-gray-400 hover:text-gray-600 transition"
-                      >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    <div className="p-6 space-y-5">
-                      {/* Company */}
-                      <div>
-                        <label htmlFor="edit-company" className="block text-sm font-medium text-gray-700 mb-2">
-                          Company <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="edit-company"
-                          value={workFormData.company}
-                          onChange={(e) => setWorkFormData({ ...workFormData, company: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Capital One"
-                        />
-                      </div>
-
-                      {/* Title */}
-                      <div>
-                        <label htmlFor="edit-jobTitle" className="block text-sm font-medium text-gray-700 mb-2">
-                          Title <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="edit-jobTitle"
-                          value={workFormData.title}
-                          onChange={(e) => setWorkFormData({ ...workFormData, title: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Software Engineer Intern"
-                        />
-                      </div>
-
-                      {/* Start Date */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Start Date <span className="text-red-500">*</span>
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <select
-                            value={workFormData.startMonth}
-                            onChange={(e) => setWorkFormData({ ...workFormData, startMonth: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          >
-                            <option value="">Month</option>
-                            {months.map(month => (
-                              <option key={month} value={month}>{month}</option>
-                            ))}
-                          </select>
-                          <select
-                            value={workFormData.startYear}
-                            onChange={(e) => setWorkFormData({ ...workFormData, startYear: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          >
-                            <option value="">Year</option>
-                            {years.map(year => (
-                              <option key={year} value={year}>{year}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Currently Working Checkbox */}
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="edit-currentlyWorking"
-                          checked={currentlyWorking}
-                          onChange={(e) => setCurrentlyWorking(e.target.checked)}
-                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                        />
-                        <label htmlFor="edit-currentlyWorking" className="text-sm font-medium text-gray-700">
-                          I currently work here
-                        </label>
-                      </div>
-
-                      {/* End Date */}
-                      {!currentlyWorking && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            End Date
-                          </label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <select
-                              value={workFormData.endMonth}
-                              onChange={(e) => setWorkFormData({ ...workFormData, endMonth: e.target.value })}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                            >
-                              <option value="">Month</option>
-                              {months.map(month => (
-                                <option key={month} value={month}>{month}</option>
-                              ))}
-                            </select>
-                            <select
-                              value={workFormData.endYear}
-                              onChange={(e) => setWorkFormData({ ...workFormData, endYear: e.target.value })}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                            >
-                              <option value="">Year</option>
-                              {years.map(year => (
-                                <option key={year} value={year}>{year}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Location */}
-                      <div>
-                        <label htmlFor="edit-workLocation" className="block text-sm font-medium text-gray-700 mb-2">
-                          Location
-                        </label>
-                        <input
-                          type="text"
-                          id="edit-workLocation"
-                          value={workFormData.location}
-                          onChange={(e) => setWorkFormData({ ...workFormData, location: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="New York, NY • Hybrid"
-                        />
-                      </div>
-
-                      {/* Description */}
-                      <div>
-                        <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-2">
-                          Description
-                        </label>
-                        <p className="text-sm text-gray-500 mb-2">
-                          Add bullet points about your responsibilities and achievements. Start each line with &quot;•&quot; for bullet points.
-                        </p>
-                        <textarea
-                          id="edit-description"
-                          value={workFormData.description}
-                          onChange={(e) => setWorkFormData({ ...workFormData, description: e.target.value })}
-                          rows={6}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
-                          placeholder="• Built a Java Spring Boot microservice&#10;• Created a Snowflake SQL pipeline&#10;• Designed REST APIs in Python"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
-                      <button
-                        onClick={() => {
-                          setShowEditWorkForm(false);
-                          setEditingWorkId(null);
-                          setCurrentlyWorking(false);
-                          setWorkFormData({
-                            company: "",
-                            title: "",
-                            startMonth: "",
-                            startYear: "",
-                            endMonth: "",
-                            endYear: "",
-                            location: "",
-                            description: "",
-                          });
-                        }}
-                        className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleUpdateWork}
-                        disabled={savingWork || !workFormData.company || !workFormData.title || !workFormData.startMonth || !workFormData.startYear || (!currentlyWorking && (!workFormData.endMonth || !workFormData.endYear))}
-                        className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {savingWork ? "Updating..." : "Update Experience"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {loadingWorkHistory ? (
                 <div className="flex items-center justify-center py-12">
@@ -1757,7 +1331,7 @@ export default function ProfilePage() {
                 <h2 className="text-2xl font-bold text-gray-900">Education History</h2>
                 <button
                   onClick={() => setShowAddEducationForm(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500/90 to-purple-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-indigo-600/90 hover:to-purple-600/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:ring-offset-2 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1766,441 +1340,7 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              {/* Add Education Form Modal */}
-              {showAddEducationForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                      <h3 className="text-xl font-bold text-gray-900">Add Education</h3>
-                      <button
-                        onClick={() => {
-                          setShowAddEducationForm(false);
-                          setCurrentlyStudying(false);
-                          setEducationFormData({
-                            schoolName: "",
-                            degree: "",
-                            fieldOfStudy: "",
-                            startMonth: "",
-                            startYear: "",
-                            endMonth: "",
-                            endYear: "",
-                            location: "",
-                            description: "",
-                          });
-                        }}
-                        className="text-gray-400 hover:text-gray-600 transition"
-                      >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    <div className="p-6 space-y-5">
-                      {/* School Name */}
-                      <div>
-                        <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 mb-2">
-                          School Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="schoolName"
-                          value={educationFormData.schoolName}
-                          onChange={(e) => setEducationFormData({ ...educationFormData, schoolName: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Queens College"
-                        />
-                      </div>
 
-                      {/* Degree */}
-                      <div>
-                        <label htmlFor="degree" className="block text-sm font-medium text-gray-700 mb-2">
-                          Degree <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="degree"
-                          value={educationFormData.degree}
-                          onChange={(e) => setEducationFormData({ ...educationFormData, degree: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Bachelor of Science"
-                        />
-                      </div>
-
-                      {/* Field of Study */}
-                      <div>
-                        <label htmlFor="fieldOfStudy" className="block text-sm font-medium text-gray-700 mb-2">
-                          Field of Study
-                        </label>
-                        <input
-                          type="text"
-                          id="fieldOfStudy"
-                          value={educationFormData.fieldOfStudy}
-                          onChange={(e) => setEducationFormData({ ...educationFormData, fieldOfStudy: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Computer Science"
-                        />
-                      </div>
-
-                      {/* Start Date */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Start Date <span className="text-red-500">*</span>
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <select
-                            value={educationFormData.startMonth}
-                            onChange={(e) => setEducationFormData({ ...educationFormData, startMonth: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          >
-                            <option value="">Month</option>
-                            {months.map(month => (
-                              <option key={month} value={month}>{month}</option>
-                            ))}
-                          </select>
-                          <select
-                            value={educationFormData.startYear}
-                            onChange={(e) => setEducationFormData({ ...educationFormData, startYear: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          >
-                            <option value="">Year</option>
-                            {years.map(year => (
-                              <option key={year} value={year}>{year}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Currently Studying Checkbox */}
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="currentlyStudying"
-                          checked={currentlyStudying}
-                          onChange={(e) => setCurrentlyStudying(e.target.checked)}
-                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                        />
-                        <label htmlFor="currentlyStudying" className="text-sm font-medium text-gray-700">
-                          I currently study here
-                        </label>
-                      </div>
-
-                      {/* End Date */}
-                      {!currentlyStudying && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            End Date
-                          </label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <select
-                              value={educationFormData.endMonth}
-                              onChange={(e) => setEducationFormData({ ...educationFormData, endMonth: e.target.value })}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                            >
-                              <option value="">Month</option>
-                              {months.map(month => (
-                                <option key={month} value={month}>{month}</option>
-                              ))}
-                            </select>
-                            <select
-                              value={educationFormData.endYear}
-                              onChange={(e) => setEducationFormData({ ...educationFormData, endYear: e.target.value })}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                            >
-                              <option value="">Year</option>
-                              {years.map(year => (
-                                <option key={year} value={year}>{year}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Location */}
-                      <div>
-                        <label htmlFor="eduLocation" className="block text-sm font-medium text-gray-700 mb-2">
-                          Location
-                        </label>
-                        <input
-                          type="text"
-                          id="eduLocation"
-                          value={educationFormData.location}
-                          onChange={(e) => setEducationFormData({ ...educationFormData, location: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Queens, NY"
-                        />
-                      </div>
-
-                      {/* Description */}
-                      <div>
-                        <label htmlFor="eduDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                          Description
-                        </label>
-                        <p className="text-sm text-gray-500 mb-2">
-                          Activities, honors, and coursework.
-                        </p>
-                        <textarea
-                          id="eduDescription"
-                          value={educationFormData.description}
-                          onChange={(e) => setEducationFormData({ ...educationFormData, description: e.target.value })}
-                          rows={4}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
-                          placeholder="Dean's List, Computer Science Club President"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
-                      <button
-                        onClick={() => {
-                          setShowAddEducationForm(false);
-                          setCurrentlyStudying(false);
-                          setEducationFormData({
-                            schoolName: "",
-                            degree: "",
-                            fieldOfStudy: "",
-                            startMonth: "",
-                            startYear: "",
-                            endMonth: "",
-                            endYear: "",
-                            location: "",
-                            description: "",
-                          });
-                        }}
-                        className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleAddEducation}
-                        disabled={savingEducation || !educationFormData.schoolName || !educationFormData.degree || !educationFormData.startMonth || !educationFormData.startYear || (!currentlyStudying && (!educationFormData.endMonth || !educationFormData.endYear))}
-                        className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {savingEducation ? "Adding..." : "Add Education"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Edit Education Form Modal */}
-              {showEditEducationForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                      <h3 className="text-xl font-bold text-gray-900">Edit Education</h3>
-                      <button
-                        onClick={() => {
-                          setShowEditEducationForm(false);
-                          setEditingEducationId(null);
-                          setCurrentlyStudying(false);
-                          setEducationFormData({
-                            schoolName: "",
-                            degree: "",
-                            fieldOfStudy: "",
-                            startMonth: "",
-                            startYear: "",
-                            endMonth: "",
-                            endYear: "",
-                            location: "",
-                            description: "",
-                          });
-                        }}
-                        className="text-gray-400 hover:text-gray-600 transition"
-                      >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    <div className="p-6 space-y-5">
-                      {/* School Name */}
-                      <div>
-                        <label htmlFor="edit-schoolName" className="block text-sm font-medium text-gray-700 mb-2">
-                          School Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="edit-schoolName"
-                          value={educationFormData.schoolName}
-                          onChange={(e) => setEducationFormData({ ...educationFormData, schoolName: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Queens College"
-                        />
-                      </div>
-
-                      {/* Degree */}
-                      <div>
-                        <label htmlFor="edit-degree" className="block text-sm font-medium text-gray-700 mb-2">
-                          Degree <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="edit-degree"
-                          value={educationFormData.degree}
-                          onChange={(e) => setEducationFormData({ ...educationFormData, degree: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Bachelor of Science"
-                        />
-                      </div>
-
-                      {/* Field of Study */}
-                      <div>
-                        <label htmlFor="edit-fieldOfStudy" className="block text-sm font-medium text-gray-700 mb-2">
-                          Field of Study
-                        </label>
-                        <input
-                          type="text"
-                          id="edit-fieldOfStudy"
-                          value={educationFormData.fieldOfStudy}
-                          onChange={(e) => setEducationFormData({ ...educationFormData, fieldOfStudy: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Computer Science"
-                        />
-                      </div>
-
-                      {/* Start Date */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Start Date <span className="text-red-500">*</span>
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <select
-                            value={educationFormData.startMonth}
-                            onChange={(e) => setEducationFormData({ ...educationFormData, startMonth: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          >
-                            <option value="">Month</option>
-                            {months.map(month => (
-                              <option key={month} value={month}>{month}</option>
-                            ))}
-                          </select>
-                          <select
-                            value={educationFormData.startYear}
-                            onChange={(e) => setEducationFormData({ ...educationFormData, startYear: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          >
-                            <option value="">Year</option>
-                            {years.map(year => (
-                              <option key={year} value={year}>{year}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Currently Studying Checkbox */}
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="edit-currentlyStudying"
-                          checked={currentlyStudying}
-                          onChange={(e) => setCurrentlyStudying(e.target.checked)}
-                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                        />
-                        <label htmlFor="edit-currentlyStudying" className="text-sm font-medium text-gray-700">
-                          I currently study here
-                        </label>
-                      </div>
-
-                      {/* End Date */}
-                      {!currentlyStudying && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            End Date
-                          </label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <select
-                              value={educationFormData.endMonth}
-                              onChange={(e) => setEducationFormData({ ...educationFormData, endMonth: e.target.value })}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                            >
-                              <option value="">Month</option>
-                              {months.map(month => (
-                                <option key={month} value={month}>{month}</option>
-                              ))}
-                            </select>
-                            <select
-                              value={educationFormData.endYear}
-                              onChange={(e) => setEducationFormData({ ...educationFormData, endYear: e.target.value })}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                            >
-                              <option value="">Year</option>
-                              {years.map(year => (
-                                <option key={year} value={year}>{year}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Location */}
-                      <div>
-                        <label htmlFor="edit-eduLocation" className="block text-sm font-medium text-gray-700 mb-2">
-                          Location
-                        </label>
-                        <input
-                          type="text"
-                          id="edit-eduLocation"
-                          value={educationFormData.location}
-                          onChange={(e) => setEducationFormData({ ...educationFormData, location: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                          placeholder="Queens, NY"
-                        />
-                      </div>
-
-                      {/* Description */}
-                      <div>
-                        <label htmlFor="edit-eduDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                          Description
-                        </label>
-                        <p className="text-sm text-gray-500 mb-2">
-                          Activities, honors, and coursework.
-                        </p>
-                        <textarea
-                          id="edit-eduDescription"
-                          value={educationFormData.description}
-                          onChange={(e) => setEducationFormData({ ...educationFormData, description: e.target.value })}
-                          rows={4}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
-                          placeholder="Dean's List, Computer Science Club President"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
-                      <button
-                        onClick={() => {
-                          setShowEditEducationForm(false);
-                          setEditingEducationId(null);
-                          setCurrentlyStudying(false);
-                          setEducationFormData({
-                            schoolName: "",
-                            degree: "",
-                            fieldOfStudy: "",
-                            startMonth: "",
-                            startYear: "",
-                            endMonth: "",
-                            endYear: "",
-                            location: "",
-                            description: "",
-                          });
-                        }}
-                        className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleUpdateEducation}
-                        disabled={savingEducation || !educationFormData.schoolName || !educationFormData.degree || !educationFormData.startMonth || !educationFormData.startYear || (!currentlyStudying && (!educationFormData.endMonth || !educationFormData.endYear))}
-                        className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {savingEducation ? "Updating..." : "Update Education"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {loadingEducationHistory ? (
                 <div className="flex items-center justify-center py-12">
@@ -2409,14 +1549,14 @@ export default function ProfilePage() {
                     {discordIntegration ? (
                       <button
                         onClick={handleVerifyDiscord}
-                        className="w-full px-4 py-2.5 bg-gray-100 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition"
+                        className="w-full px-4 py-2.5 bg-white/50 backdrop-blur-sm text-gray-700 text-sm font-semibold rounded-xl border border-gray-200/50 hover:bg-gray-50/80 hover:border-gray-300/50 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md"
                       >
                         Refresh Status
                       </button>
                     ) : (
                       <button
                         onClick={handleConnectDiscord}
-                        className="w-full px-4 py-2.5 bg-[#5865F2] text-white font-medium rounded-lg border border-[#4752C4] hover:bg-[#4752C4] hover:border-[#3c45a3] transition"
+                        className="w-full px-4 py-2.5 bg-gradient-to-r from-[#5865F2]/90 to-[#4752C4]/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-[#4752C4]/90 hover:to-[#3c45a3]/90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
                       >
                         Connect
                       </button>
@@ -2477,14 +1617,14 @@ export default function ProfilePage() {
                       <button
                         onClick={handleSelectRepos}
                         disabled={loadingRepos}
-                        className="w-full px-4 py-2.5 bg-gray-100 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition disabled:opacity-50"
+                        className="w-full px-4 py-2.5 bg-white/50 backdrop-blur-sm text-gray-700 text-sm font-semibold rounded-xl border border-gray-200/50 hover:bg-gray-50/80 hover:border-gray-300/50 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 disabled:hover:scale-100"
                       >
                         {loadingRepos ? "Loading..." : "Update Repositories"}
                       </button>
                     ) : (
                       <button
                         onClick={handleConnectGithub}
-                        className="w-full px-4 py-2.5 bg-gray-800 text-white font-medium rounded-lg border border-gray-700 hover:bg-gray-700 hover:border-gray-600 transition"
+                        className="w-full px-4 py-2.5 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-gray-700/90 hover:to-gray-600/90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
                       >
                         Connect
                       </button>
@@ -2526,10 +1666,11 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+    </div>
 
       {/* Profile Picture Modal */}
       {showPhotoModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
@@ -2585,7 +1726,7 @@ export default function ProfilePage() {
                         onChange={handleFileSelect}
                         className="hidden"
                       />
-                      <div className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition">
+                      <div className="px-8 py-3 bg-gradient-to-r from-indigo-500/90 to-purple-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-indigo-600/90 hover:to-purple-600/90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
                         Choose New Photo
                       </div>
                     </label>
@@ -2642,14 +1783,14 @@ export default function ProfilePage() {
                         setZoom(1);
                       }}
                       disabled={uploadingPhoto}
-                      className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
+                      className="flex-1 px-6 py-2.5 text-gray-600 font-medium rounded-xl border border-gray-200/50 bg-white/50 backdrop-blur-sm hover:bg-gray-50/80 hover:border-gray-300/50 transition-all duration-300 disabled:opacity-50"
                     >
                       Choose Different Photo
                     </button>
                     <button
                       onClick={handlePhotoUpload}
                       disabled={uploadingPhoto}
-                      className="flex-1 px-4 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-8 py-2.5 bg-gradient-to-r from-teal-500/90 to-emerald-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-teal-600/90 hover:to-emerald-600/90 hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
                     >
                       {uploadingPhoto ? "Uploading..." : "Save Photo"}
                     </button>
@@ -2762,7 +1903,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+            <div className="bg-white/80 backdrop-blur-xl border-t border-white/20 px-6 py-4 flex items-center justify-between flex-shrink-0">
               <div className="text-sm text-gray-600">
                 {selectedRepos.length} of 3 selected
               </div>
@@ -2770,14 +1911,14 @@ export default function ProfilePage() {
                 <button
                   onClick={() => setShowRepoModal(false)}
                   disabled={savingRepos}
-                  className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition disabled:opacity-50"
+                  className="px-6 py-2.5 text-gray-600 font-medium rounded-xl border border-gray-200/50 bg-white/50 backdrop-blur-sm hover:bg-gray-50/80 hover:border-gray-300/50 transition-all duration-300 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveRepos}
                   disabled={savingRepos || selectedRepos.length === 0}
-                  className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-2.5 bg-gradient-to-r from-teal-500/90 to-emerald-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-teal-600/90 hover:to-emerald-600/90 hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
                 >
                   {savingRepos ? "Saving..." : "Save Selection"}
                 </button>
@@ -2786,6 +1927,846 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* Work Experience Modals */}
+      {/* Add Work Form Modal */}
+      {showAddWorkForm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">Add Work Experience</h3>
+              <button
+                onClick={() => {
+                  setShowAddWorkForm(false);
+                  setCurrentlyWorking(false);
+                  setWorkFormData({
+                    company: "",
+                    title: "",
+                    startMonth: "",
+                    startYear: "",
+                    endMonth: "",
+                    endYear: "",
+                    location: "",
+                    description: "",
+                  });
+                }}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              {/* Company */}
+              <div>
+                <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                  Company <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="company"
+                  value={workFormData.company}
+                  onChange={(e) => setWorkFormData({ ...workFormData, company: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="Tech Company"
+                />
+              </div>
+
+              {/* Title */}
+              <div>
+                <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 mb-2">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="jobTitle"
+                  value={workFormData.title}
+                  onChange={(e) => setWorkFormData({ ...workFormData, title: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="Software Engineer"
+                />
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <select
+                    value={workFormData.startMonth}
+                    onChange={(e) => setWorkFormData({ ...workFormData, startMonth: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  >
+                    <option value="">Month</option>
+                    {months.map(month => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={workFormData.startYear}
+                    onChange={(e) => setWorkFormData({ ...workFormData, startYear: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  >
+                    <option value="">Year</option>
+                    {years.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Currently Working Checkbox */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="currentlyWorking"
+                  checked={currentlyWorking}
+                  onChange={(e) => setCurrentlyWorking(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <label htmlFor="currentlyWorking" className="text-sm font-medium text-gray-700">
+                  I currently work here
+                </label>
+              </div>
+
+              {/* End Date */}
+              {!currentlyWorking && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={workFormData.endMonth}
+                      onChange={(e) => setWorkFormData({ ...workFormData, endMonth: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                    >
+                      <option value="">Month</option>
+                      {months.map(month => (
+                        <option key={month} value={month}>{month}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={workFormData.endYear}
+                      onChange={(e) => setWorkFormData({ ...workFormData, endYear: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                    >
+                      <option value="">Year</option>
+                      {years.map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Location */}
+              <div>
+                <label htmlFor="workLocation" className="block text-sm font-medium text-gray-700 mb-2">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  id="workLocation"
+                  value={workFormData.location}
+                  onChange={(e) => setWorkFormData({ ...workFormData, location: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="New York, NY"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <p className="text-sm text-gray-500 mb-2">
+                  Add bullet points about your responsibilities and achievements. Start each line with &quot;•&quot; for bullet points.
+                </p>
+                <textarea
+                  id="description"
+                  value={workFormData.description}
+                  onChange={(e) => setWorkFormData({ ...workFormData, description: e.target.value })}
+                  rows={6}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
+                  placeholder="• Developed web applications using modern frameworks&#10;• Collaborated with cross-functional teams&#10;• Implemented new features and bug fixes"
+                />
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl border-t border-white/20 px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowAddWorkForm(false);
+                  setCurrentlyWorking(false);
+                  setWorkFormData({
+                    company: "",
+                    title: "",
+                    startMonth: "",
+                    startYear: "",
+                    endMonth: "",
+                    endYear: "",
+                    location: "",
+                    description: "",
+                  });
+                }}
+                className="px-6 py-2.5 text-gray-600 font-medium rounded-xl border border-gray-200/50 bg-white/50 backdrop-blur-sm hover:bg-gray-50/80 hover:border-gray-300/50 transition-all duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddWork}
+                disabled={savingWork || !workFormData.company || !workFormData.title || !workFormData.startMonth || !workFormData.startYear || (!currentlyWorking && (!workFormData.endMonth || !workFormData.endYear))}
+                className="px-8 py-2.5 bg-gradient-to-r from-teal-500/90 to-emerald-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-teal-600/90 hover:to-emerald-600/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-400/50 focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
+              >
+                {savingWork ? "Adding..." : "Add Experience"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Work Form Modal */}
+      {showEditWorkForm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">Edit Work Experience</h3>
+              <button
+                onClick={() => {
+                  setShowEditWorkForm(false);
+                  setEditingWorkId(null);
+                  setCurrentlyWorking(false);
+                  setWorkFormData({
+                    company: "",
+                    title: "",
+                    startMonth: "",
+                    startYear: "",
+                    endMonth: "",
+                    endYear: "",
+                    location: "",
+                    description: "",
+                  });
+                }}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              {/* Company */}
+              <div>
+                <label htmlFor="edit-company" className="block text-sm font-medium text-gray-700 mb-2">
+                  Company <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="edit-company"
+                  value={workFormData.company}
+                  onChange={(e) => setWorkFormData({ ...workFormData, company: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="Tech Company"
+                />
+              </div>
+
+              {/* Title */}
+              <div>
+                <label htmlFor="edit-jobTitle" className="block text-sm font-medium text-gray-700 mb-2">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="edit-jobTitle"
+                  value={workFormData.title}
+                  onChange={(e) => setWorkFormData({ ...workFormData, title: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="Software Engineer"
+                />
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <select
+                    value={workFormData.startMonth}
+                    onChange={(e) => setWorkFormData({ ...workFormData, startMonth: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  >
+                    <option value="">Month</option>
+                    {months.map(month => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={workFormData.startYear}
+                    onChange={(e) => setWorkFormData({ ...workFormData, startYear: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  >
+                    <option value="">Year</option>
+                    {years.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Currently Working Checkbox */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-currentlyWorking"
+                  checked={currentlyWorking}
+                  onChange={(e) => setCurrentlyWorking(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <label htmlFor="edit-currentlyWorking" className="text-sm font-medium text-gray-700">
+                  I currently work here
+                </label>
+              </div>
+
+              {/* End Date */}
+              {!currentlyWorking && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={workFormData.endMonth}
+                      onChange={(e) => setWorkFormData({ ...workFormData, endMonth: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                    >
+                      <option value="">Month</option>
+                      {months.map(month => (
+                        <option key={month} value={month}>{month}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={workFormData.endYear}
+                      onChange={(e) => setWorkFormData({ ...workFormData, endYear: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                    >
+                      <option value="">Year</option>
+                      {years.map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Location */}
+              <div>
+                <label htmlFor="edit-workLocation" className="block text-sm font-medium text-gray-700 mb-2">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  id="edit-workLocation"
+                  value={workFormData.location}
+                  onChange={(e) => setWorkFormData({ ...workFormData, location: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="New York, NY"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <p className="text-sm text-gray-500 mb-2">
+                  Add bullet points about your responsibilities and achievements. Start each line with &quot;•&quot; for bullet points.
+                </p>
+                <textarea
+                  id="edit-description"
+                  value={workFormData.description}
+                  onChange={(e) => setWorkFormData({ ...workFormData, description: e.target.value })}
+                  rows={6}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
+                  placeholder="• Developed web applications using modern frameworks&#10;• Collaborated with cross-functional teams&#10;• Implemented new features and bug fixes"
+                />
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl border-t border-white/20 px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowEditWorkForm(false);
+                  setEditingWorkId(null);
+                  setCurrentlyWorking(false);
+                  setWorkFormData({
+                    company: "",
+                    title: "",
+                    startMonth: "",
+                    startYear: "",
+                    endMonth: "",
+                    endYear: "",
+                    location: "",
+                    description: "",
+                  });
+                }}
+                className="px-6 py-2.5 text-gray-600 font-medium rounded-xl border border-gray-200/50 bg-white/50 backdrop-blur-sm hover:bg-gray-50/80 hover:border-gray-300/50 transition-all duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateWork}
+                disabled={savingWork || !workFormData.company || !workFormData.title || !workFormData.startMonth || !workFormData.startYear || (!currentlyWorking && (!workFormData.endMonth || !workFormData.endYear))}
+                className="px-8 py-2.5 bg-gradient-to-r from-teal-500/90 to-emerald-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-teal-600/90 hover:to-emerald-600/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-400/50 focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
+              >
+                {savingWork ? "Updating..." : "Update Experience"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Education Modals */}
+      {/* Add Education Form Modal */}
+      {showAddEducationForm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">Add Education</h3>
+              <button
+                onClick={() => {
+                  setShowAddEducationForm(false);
+                  setCurrentlyStudying(false);
+                  setEducationFormData({
+                    schoolName: "",
+                    degree: "",
+                    fieldOfStudy: "",
+                    startMonth: "",
+                    startYear: "",
+                    endMonth: "",
+                    endYear: "",
+                    location: "",
+                    description: "",
+                  });
+                }}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              {/* School Name */}
+              <div>
+                <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 mb-2">
+                  School Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="schoolName"
+                  value={educationFormData.schoolName}
+                  onChange={(e) => setEducationFormData({ ...educationFormData, schoolName: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="University Name"
+                />
+              </div>
+
+              {/* Degree */}
+              <div>
+                <label htmlFor="degree" className="block text-sm font-medium text-gray-700 mb-2">
+                  Degree <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="degree"
+                  value={educationFormData.degree}
+                  onChange={(e) => setEducationFormData({ ...educationFormData, degree: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="Bachelor of Science"
+                />
+              </div>
+
+              {/* Field of Study */}
+              <div>
+                <label htmlFor="fieldOfStudy" className="block text-sm font-medium text-gray-700 mb-2">
+                  Field of Study
+                </label>
+                <input
+                  type="text"
+                  id="fieldOfStudy"
+                  value={educationFormData.fieldOfStudy}
+                  onChange={(e) => setEducationFormData({ ...educationFormData, fieldOfStudy: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="Computer Science"
+                />
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <select
+                    value={educationFormData.startMonth}
+                    onChange={(e) => setEducationFormData({ ...educationFormData, startMonth: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  >
+                    <option value="">Month</option>
+                    {months.map(month => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={educationFormData.startYear}
+                    onChange={(e) => setEducationFormData({ ...educationFormData, startYear: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  >
+                    <option value="">Year</option>
+                    {years.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Currently Studying Checkbox */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="currentlyStudying"
+                  checked={currentlyStudying}
+                  onChange={(e) => setCurrentlyStudying(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <label htmlFor="currentlyStudying" className="text-sm font-medium text-gray-700">
+                  I currently study here
+                </label>
+              </div>
+
+              {/* End Date */}
+              {!currentlyStudying && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={educationFormData.endMonth}
+                      onChange={(e) => setEducationFormData({ ...educationFormData, endMonth: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                    >
+                      <option value="">Month</option>
+                      {months.map(month => (
+                        <option key={month} value={month}>{month}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={educationFormData.endYear}
+                      onChange={(e) => setEducationFormData({ ...educationFormData, endYear: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                    >
+                      <option value="">Year</option>
+                      {years.map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Location */}
+              <div>
+                <label htmlFor="eduLocation" className="block text-sm font-medium text-gray-700 mb-2">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  id="eduLocation"
+                  value={educationFormData.location}
+                  onChange={(e) => setEducationFormData({ ...educationFormData, location: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="City, State"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label htmlFor="eduDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <p className="text-sm text-gray-500 mb-2">
+                  Activities, honors, and coursework.
+                </p>
+                <textarea
+                  id="eduDescription"
+                  value={educationFormData.description}
+                  onChange={(e) => setEducationFormData({ ...educationFormData, description: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
+                  placeholder="Dean's List, Relevant coursework, Extracurricular activities"
+                />
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl border-t border-white/20 px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowAddEducationForm(false);
+                  setCurrentlyStudying(false);
+                  setEducationFormData({
+                    schoolName: "",
+                    degree: "",
+                    fieldOfStudy: "",
+                    startMonth: "",
+                    startYear: "",
+                    endMonth: "",
+                    endYear: "",
+                    location: "",
+                    description: "",
+                  });
+                }}
+                className="px-6 py-2.5 text-gray-600 font-medium rounded-xl border border-gray-200/50 bg-white/50 backdrop-blur-sm hover:bg-gray-50/80 hover:border-gray-300/50 transition-all duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddEducation}
+                disabled={savingEducation || !educationFormData.schoolName || !educationFormData.degree || !educationFormData.startMonth || !educationFormData.startYear || (!currentlyStudying && (!educationFormData.endMonth || !educationFormData.endYear))}
+                className="px-8 py-2.5 bg-gradient-to-r from-teal-500/90 to-emerald-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-teal-600/90 hover:to-emerald-600/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-400/50 focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
+              >
+                {savingEducation ? "Adding..." : "Add Education"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Education Form Modal */}
+      {showEditEducationForm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">Edit Education</h3>
+              <button
+                onClick={() => {
+                  setShowEditEducationForm(false);
+                  setEditingEducationId(null);
+                  setCurrentlyStudying(false);
+                  setEducationFormData({
+                    schoolName: "",
+                    degree: "",
+                    fieldOfStudy: "",
+                    startMonth: "",
+                    startYear: "",
+                    endMonth: "",
+                    endYear: "",
+                    location: "",
+                    description: "",
+                  });
+                }}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              {/* School Name */}
+              <div>
+                <label htmlFor="edit-schoolName" className="block text-sm font-medium text-gray-700 mb-2">
+                  School Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="edit-schoolName"
+                  value={educationFormData.schoolName}
+                  onChange={(e) => setEducationFormData({ ...educationFormData, schoolName: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="University Name"
+                />
+              </div>
+
+              {/* Degree */}
+              <div>
+                <label htmlFor="edit-degree" className="block text-sm font-medium text-gray-700 mb-2">
+                  Degree <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="edit-degree"
+                  value={educationFormData.degree}
+                  onChange={(e) => setEducationFormData({ ...educationFormData, degree: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="Bachelor of Science"
+                />
+              </div>
+
+              {/* Field of Study */}
+              <div>
+                <label htmlFor="edit-fieldOfStudy" className="block text-sm font-medium text-gray-700 mb-2">
+                  Field of Study
+                </label>
+                <input
+                  type="text"
+                  id="edit-fieldOfStudy"
+                  value={educationFormData.fieldOfStudy}
+                  onChange={(e) => setEducationFormData({ ...educationFormData, fieldOfStudy: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="Computer Science"
+                />
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <select
+                    value={educationFormData.startMonth}
+                    onChange={(e) => setEducationFormData({ ...educationFormData, startMonth: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  >
+                    <option value="">Month</option>
+                    {months.map(month => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={educationFormData.startYear}
+                    onChange={(e) => setEducationFormData({ ...educationFormData, startYear: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  >
+                    <option value="">Year</option>
+                    {years.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Currently Studying Checkbox */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-currentlyStudying"
+                  checked={currentlyStudying}
+                  onChange={(e) => setCurrentlyStudying(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <label htmlFor="edit-currentlyStudying" className="text-sm font-medium text-gray-700">
+                  I currently study here
+                </label>
+              </div>
+
+              {/* End Date */}
+              {!currentlyStudying && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={educationFormData.endMonth}
+                      onChange={(e) => setEducationFormData({ ...educationFormData, endMonth: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                    >
+                      <option value="">Month</option>
+                      {months.map(month => (
+                        <option key={month} value={month}>{month}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={educationFormData.endYear}
+                      onChange={(e) => setEducationFormData({ ...educationFormData, endYear: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                    >
+                      <option value="">Year</option>
+                      {years.map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Location */}
+              <div>
+                <label htmlFor="edit-eduLocation" className="block text-sm font-medium text-gray-700 mb-2">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  id="edit-eduLocation"
+                  value={educationFormData.location}
+                  onChange={(e) => setEducationFormData({ ...educationFormData, location: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  placeholder="City, State"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label htmlFor="edit-eduDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <p className="text-sm text-gray-500 mb-2">
+                  Activities, honors, and coursework.
+                </p>
+                <textarea
+                  id="edit-eduDescription"
+                  value={educationFormData.description}
+                  onChange={(e) => setEducationFormData({ ...educationFormData, description: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
+                  placeholder="Dean's List, Relevant coursework, Extracurricular activities"
+                />
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl border-t border-white/20 px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowEditEducationForm(false);
+                  setEditingEducationId(null);
+                  setCurrentlyStudying(false);
+                  setEducationFormData({
+                    schoolName: "",
+                    degree: "",
+                    fieldOfStudy: "",
+                    startMonth: "",
+                    startYear: "",
+                    endMonth: "",
+                    endYear: "",
+                    location: "",
+                    description: "",
+                  });
+                }}
+                className="px-6 py-2.5 text-gray-600 font-medium rounded-xl border border-gray-200/50 bg-white/50 backdrop-blur-sm hover:bg-gray-50/80 hover:border-gray-300/50 transition-all duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateEducation}
+                disabled={savingEducation || !educationFormData.schoolName || !educationFormData.degree || !educationFormData.startMonth || !educationFormData.startYear || (!currentlyStudying && (!educationFormData.endMonth || !educationFormData.endYear))}
+                className="px-8 py-2.5 bg-gradient-to-r from-teal-500/90 to-emerald-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-teal-600/90 hover:to-emerald-600/90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-400/50 focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
+              >
+                {savingEducation ? "Updating..." : "Update Education"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

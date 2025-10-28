@@ -17,9 +17,9 @@ export default function Sidebar() {
         const handleResize = () => {
             const screenWidth = window.innerWidth;
             const isSmallScreen = screenWidth < 1024; // Collapse on smaller screens
-            
+
             setIsSmallScreen(isSmallScreen);
-            
+
             // Auto-collapse on small screens, but allow manual control on larger screens
             if (isSmallScreen) {
                 setIsCollapsed(true);
@@ -29,7 +29,7 @@ export default function Sidebar() {
         // Run on mount and resize
         handleResize();
         window.addEventListener('resize', handleResize);
-        
+
         return () => {
             window.removeEventListener('resize', handleResize);
         };
@@ -61,9 +61,9 @@ export default function Sidebar() {
     ];
 
     const NavLink = ({ href, label, icon, alt }: { href: string; label: string; icon: string; alt: string }) => (
-        <Link 
+        <Link
             aria-current={pathname.endsWith(href.split('/').pop() || '') ? "page" : undefined}
-            className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 aria-[current='page']:bg-gradient-to-r aria-[current='page']:from-gray-900 aria-[current='page']:to-gray-700 aria-[current='page']:text-white aria-[current='page']:hover:text-white" 
+            className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 aria-[current='page']:bg-gradient-to-r aria-[current='page']:from-gray-900 aria-[current='page']:to-gray-700 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
             href={href}
             onClick={() => setIsMobileMenuOpen(false)}
         >
@@ -92,7 +92,7 @@ export default function Sidebar() {
 
             {/* Mobile Menu Overlay */}
             {isMobileMenuOpen && (
-                <div 
+                <div
                     className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40"
                     onClick={() => setIsMobileMenuOpen(false)}
                 />
@@ -115,7 +115,7 @@ export default function Sidebar() {
                             </svg>
                         </button>
                     </div>
-                    
+
                     <nav className="flex-1">
                         <ul className="flex flex-col gap-1">
                             {navigationItems.map((item) => (
@@ -125,14 +125,14 @@ export default function Sidebar() {
                             ))}
                         </ul>
                     </nav>
-                    
+
                     <div className="mt-auto">
-                        <button 
+                        <button
                             onClick={() => {
                                 handleLogout();
                                 setIsMobileMenuOpen(false);
                             }}
-                            className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200" 
+                            className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200"
                             type="button"
                         >
                             <Image src="/assets/logout.svg" alt="Logout icon" width={20} height={20} style={{ width: 'auto', height: 'auto' }} />
@@ -177,9 +177,9 @@ export default function Sidebar() {
                     </ul>
                 </nav>
                 <div className={`p-2 w-full mt-auto ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>
-                    <button 
+                    <button
                         onClick={handleLogout}
-                        className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200" 
+                        className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200"
                         type="button"
                     >
                         <Image src="/assets/logout.svg" alt="Logout icon" width={20} height={20} style={{ width: 'auto', height: 'auto' }} />

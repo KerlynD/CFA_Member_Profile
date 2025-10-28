@@ -48,21 +48,21 @@ const toOptions = (values: (string | null | undefined)[]) =>
 /*----------------Custom Components----------*/
 const SchoolPlaceholder = () => (
     <div className="flex items-center gap-2">
-        <Image src="/nextjs/notebook-svgrepo-com.svg" alt="School" width={16} height={16} />
+        <Image src="/assets/school.svg" alt="School" width={16} height={16} />
         <span>School</span>
     </div>
 );
 
 const LocationPlaceholder = () => (
     <div className="flex items-center gap-2">
-        <Image src="/nextjs/earth-svgrepo-com.svg" alt="Location" width={16} height={16} />
+        <Image src="/assets/location.svg" alt="Location" width={16} height={16} />
         <span>Location</span>
     </div>
 );
 
 const CompanyPlaceholder = () => (
     <div className="flex items-center gap-2">
-        <Image src="/nextjs/shop-svgrepo-com.svg" alt="Company" width={16} height={16} />
+        <Image src="/assets/company.svg" alt="Company" width={16} height={16} />
         <span>Company</span>
     </div>
 );
@@ -74,7 +74,7 @@ const ProfileImage = ({ src, alt, className }: { src: string; alt: string; class
         return (
             <div className={`${className} bg-gray-200 flex items-center justify-center`}>
                 <Image 
-                    src="/nextjs/camera-svgrepo-com.svg" 
+                    src="/assets/profile.svg" 
                     alt="Default profile" 
                     width={24} 
                     height={24} 

@@ -239,3 +239,43 @@ func DeleteEvent(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"message": "Event deleted successfully"})
 }
+
+// GET /api/events/:id/attendees
+func GetEventAttendees(c *fiber.Ctx) error {
+	/*
+		Gets attendees for a specific event with their profile photos
+		Returns a JSON array of attendee objects with id, name, and picture
+	*/
+	eventID := c.Params("id")
+
+	rows, err := db.Pool.Query(context.Background(), `
+		SELECT u.id, u.name, u.picture 
+		FROM users u
+		JOIN event_registrations er ON u.id = er.user_id
+		WHERE er.event_id = $1
+		ORDER BY u.name`, eventID)
+
+	if err != nil {
+		log.Println("Internal DB Error: ", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Database query failed"})
+	}
+	defer rows.Close()
+
+	type Attendee struct {
+		ID      int    `json:"id"`
+		Name    string `json:"name"`
+		Picture string `json:"picture"`
+	}
+
+	attendees := []Attendee{}
+	for rows.Next() {
+		var attendee Attendee
+		if err := rows.Scan(&attendee.ID, &attendee.Name, &attendee.Picture); err != nil {
+			log.Println("Scanner Error: ", err)
+			continue
+		}
+		attendees = append(attendees, attendee)
+	}
+
+	return c.JSON(attendees)
+}

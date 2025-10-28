@@ -69,7 +69,7 @@ export default function Sidebar() {
     const NavLink = ({ href, label, icon, alt }: { href: string; label: string; icon: string; alt: string }) => (
         <Link
             aria-current={pathname.endsWith(href.split('/').pop() || '') ? "page" : undefined}
-            className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 aria-[current='page']:bg-gradient-to-r aria-[current='page']:from-gray-900 aria-[current='page']:to-gray-700 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
+            className="box-border flex w-full items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 active:bg-gray-200 aria-[current='page']:bg-gradient-to-r aria-[current='page']:from-gray-300 aria-[current='page']:to-gray-700 aria-[current='page']:text-white aria-[current='page']:hover:text-white"
             href={href}
             onClick={() => setIsMobileMenuOpen(false)}
         >

@@ -17,6 +17,12 @@ interface Event {
   is_registered: boolean;
 }
 
+interface Attendee {
+  id: number;
+  name: string;
+  picture: string;
+}
+
 export default function Events() {
   const router = useRouter();
   const [events, setEvents] = useState<Event[]>([]);
@@ -27,6 +33,7 @@ export default function Events() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [savingEvent, setSavingEvent] = useState(false);
+  const [eventAttendees, setEventAttendees] = useState<{ [eventId: number]: Attendee[] }>({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -58,6 +65,24 @@ export default function Events() {
     }
   };
 
+  const fetchAttendees = async (eventId: number) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/events/${eventId}/attendees`, {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const attendees = await res.json();
+        setEventAttendees(prev => ({
+          ...prev,
+          [eventId]: attendees || []
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching attendees:", error);
+    }
+  };
+
   const fetchEvents = async () => {
     setLoading(true);
     try {
@@ -73,6 +98,13 @@ export default function Events() {
       if (res.ok) {
         const data = await res.json();
         setEvents(data || []);
+        
+        // Fetch attendees for each event
+        if (data && data.length > 0) {
+          data.forEach((event: Event) => {
+            fetchAttendees(event.id);
+          });
+        }
       } else {
         console.error("Failed to fetch events");
       }
@@ -92,6 +124,7 @@ export default function Events() {
 
       if (res.ok) {
         await fetchEvents(); // Refresh the events list
+        await fetchAttendees(eventId); // Refresh attendees for this event
       } else {
         const error = await res.json();
         alert(`Error: ${error.error || "Registration failed"}`);
@@ -111,6 +144,7 @@ export default function Events() {
 
       if (res.ok) {
         await fetchEvents(); // Refresh the events list
+        await fetchAttendees(eventId); // Refresh attendees for this event
       } else {
         const error = await res.json();
         alert(`Error: ${error.error || "Unregistration failed"}`);
@@ -318,6 +352,36 @@ export default function Events() {
   const upcomingEvents = events.filter(event => isUpcoming(event.date));
   const pastEvents = events.filter(event => !isUpcoming(event.date));
 
+  // Component for attendee profile image with fallback
+  const AttendeeImage = ({ attendee, size = 8 }: { attendee: Attendee; size?: number }) => {
+    const [imageError, setImageError] = useState(false);
+    
+    if (imageError || !attendee.picture) {
+      return (
+        <div 
+          className={`w-${size} h-${size} rounded-full bg-gradient-to-br from-blue-400 to-purple-500 border-2 border-white flex items-center justify-center`}
+          title={attendee.name}
+        >
+          <span className="text-white text-xs font-medium">
+            {attendee.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <Image
+        src={attendee.picture}
+        alt={attendee.name}
+        width={size * 4}
+        height={size * 4}
+        className={`w-${size} h-${size} rounded-full border-2 border-white object-cover`}
+        title={attendee.name}
+        onError={() => setImageError(true)}
+      />
+    );
+  };
+
   const EventCard = ({ event, isPast }: { event: Event; isPast: boolean }) => (
     <div 
       className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-lg transition relative cursor-pointer"
@@ -401,10 +465,16 @@ export default function Events() {
       {/* Attendees */}
       <div className="flex items-center gap-2 mb-4">
         <div className="flex -space-x-2">
-          {/* Placeholder profile images - in production, fetch actual attendee images */}
-          {[...Array(Math.min(event.attendees, 3))].map((_, i) => (
-            <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 border-2 border-white" />
-          ))}
+          {eventAttendees[event.id] && eventAttendees[event.id].length > 0 ? (
+            eventAttendees[event.id].slice(0, 3).map((attendee) => (
+              <AttendeeImage key={attendee.id} attendee={attendee} size={8} />
+            ))
+          ) : (
+            // Fallback for when attendees haven't loaded yet
+            [...Array(Math.min(event.attendees, 3))].map((_, i) => (
+              <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 border-2 border-white" />
+            ))
+          )}
         </div>
         <span className="text-sm text-gray-600 font-medium">
           {event.attendees} {event.attendees === 1 ? 'person' : 'people'} {isPast ? 'attended' : 'going'}
@@ -523,7 +593,7 @@ export default function Events() {
 
       {/* Detail View Modal */}
       {showDetailModal && selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-30 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               {/* Modal Header */}
@@ -587,9 +657,16 @@ export default function Events() {
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Attendees</h3>
                   <div className="flex items-center gap-3">
                     <div className="flex -space-x-2">
-                      {[...Array(Math.min(selectedEvent.attendees, 5))].map((_, i) => (
-                        <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 border-2 border-white" />
-                      ))}
+                      {eventAttendees[selectedEvent.id] && eventAttendees[selectedEvent.id].length > 0 ? (
+                        eventAttendees[selectedEvent.id].slice(0, 5).map((attendee) => (
+                          <AttendeeImage key={attendee.id} attendee={attendee} size={10} />
+                        ))
+                      ) : (
+                        // Fallback for when attendees haven't loaded yet
+                        [...Array(Math.min(selectedEvent.attendees, 5))].map((_, i) => (
+                          <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 border-2 border-white" />
+                        ))
+                      )}
                     </div>
                     <span className="text-gray-700 font-medium">
                       {selectedEvent.attendees} {selectedEvent.attendees === 1 ? 'person' : 'people'} {isUpcoming(selectedEvent.date) ? 'going' : 'attended'}
@@ -662,7 +739,7 @@ export default function Events() {
 
       {/* Add Event Modal (Admin Only) */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-30 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               {/* Modal Header */}
@@ -809,7 +886,7 @@ export default function Events() {
 
       {/* Edit Event Modal (Admin Only) */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-30 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               {/* Modal Header */}

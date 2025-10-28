@@ -39,12 +39,18 @@ export default function Offers() {
     role: "",
     offerType: "internship",
     hourlyRate: "",
+    yearlySalary: "",
     location: "",
   });
 
   // Calculate monthly rate from hourly rate (40 hrs/week × 4.33 weeks/month ≈ 173.33 hrs/month)
   const calculateMonthlyRate = (hourlyRate: number) => {
     return hourlyRate * 173.33;
+  };
+
+  // Calculate hourly rate from yearly salary (2080 hours/year = 40 hrs/week × 52 weeks)
+  const calculateHourlyFromYearly = (yearlySalary: number) => {
+    return yearlySalary / 2080;
   };
 
   useEffect(() => {
@@ -157,7 +163,16 @@ export default function Offers() {
   const handleAddOffer = async () => {
     setSavingOffer(true);
     try {
-      const hourlyRate = parseFloat(formData.hourlyRate);
+      let hourlyRate: number;
+      
+      if (formData.offerType === "full-time" && formData.yearlySalary) {
+        // Calculate hourly rate from yearly salary
+        hourlyRate = calculateHourlyFromYearly(parseFloat(formData.yearlySalary));
+      } else {
+        // Use hourly rate directly
+        hourlyRate = parseFloat(formData.hourlyRate);
+      }
+      
       const monthlyRate = calculateMonthlyRate(hourlyRate);
 
       const res = await fetch("http://localhost:8080/api/offers", {
@@ -182,6 +197,7 @@ export default function Offers() {
           role: "",
           offerType: "internship",
           hourlyRate: "",
+          yearlySalary: "",
           location: "",
         });
         setShowAddModal(false);
@@ -213,15 +229,15 @@ export default function Offers() {
   const { avgHourly, avgMonthly } = calculateAverages();
 
     return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-3xl font-bold text-gray-900">Offers 💰</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Offers 💰</h1>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition"
+          className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition w-full sm:w-auto"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -231,7 +247,7 @@ export default function Offers() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => setOfferTypeFilter("internship")}
           className={`px-4 py-2 rounded-lg font-medium transition ${
@@ -276,7 +292,7 @@ export default function Offers() {
 
       {/* Filter and Sort Controls */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-4">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700">Company:</label>
             <select
@@ -349,7 +365,7 @@ export default function Offers() {
 
       {/* Add Offer Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-bold text-gray-900">Add Offer</h3>
@@ -375,7 +391,7 @@ export default function Offers() {
                   value={formData.company}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                  placeholder="Capital One"
+                  placeholder="Company Name"
                 />
               </div>
 
@@ -390,7 +406,7 @@ export default function Offers() {
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                  placeholder="Software Engineer Intern"
+                  placeholder="Role"
                 />
               </div>
 
@@ -423,25 +439,43 @@ export default function Offers() {
                 </div>
               </div>
 
-              {/* Hourly Rate */}
-              <div>
-                <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700 mb-2">
-                  Hourly Rate ($) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  id="hourlyRate"
-                  step="0.01"
-                  value={formData.hourlyRate}
-                  onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                  placeholder="65.00"
-                />
-                <p className="text-xs text-gray-500 mt-1">Monthly rate will be auto-calculated (40 hrs/week × 4.33 weeks/month)</p>
-              </div>
+              {/* Hourly Rate / Yearly Salary */}
+              {formData.offerType === "internship" ? (
+                <div>
+                  <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700 mb-2">
+                    Hourly Rate ($) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="hourlyRate"
+                    step="0.01"
+                    value={formData.hourlyRate}
+                    onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value, yearlySalary: "" })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                    placeholder="Hourly Rate"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Monthly rate will be auto-calculated (40 hrs/week × 4.33 weeks/month)</p>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="yearlySalary" className="block text-sm font-medium text-gray-700 mb-2">
+                    Yearly Salary ($) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="yearlySalary"
+                    step="0.01"
+                    value={formData.yearlySalary}
+                    onChange={(e) => setFormData({ ...formData, yearlySalary: e.target.value, hourlyRate: "" })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                    placeholder="Yearly Salary"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Hourly and monthly rates will be auto-calculated (2080 hours/year)</p>
+                </div>
+              )}
 
               {/* Location */}
-        <div>
+              <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
                   Location <span className="text-red-500">*</span>
                 </label>
@@ -451,7 +485,7 @@ export default function Offers() {
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                  placeholder="McLean, VA"
+                  placeholder="Location"
                 />
               </div>
             </div>
@@ -465,7 +499,8 @@ export default function Offers() {
               </button>
               <button
                 onClick={handleAddOffer}
-                disabled={savingOffer || !formData.company || !formData.role || !formData.hourlyRate || !formData.location}
+                disabled={savingOffer || !formData.company || !formData.role || !formData.location || 
+                  (formData.offerType === "internship" ? !formData.hourlyRate : !formData.yearlySalary)}
                 className="px-6 py-2.5 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingOffer ? "Adding..." : "Add Offer"}
@@ -486,8 +521,8 @@ export default function Offers() {
             <p className="text-gray-600">No offers found. Be the first to add one!</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full min-w-[600px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

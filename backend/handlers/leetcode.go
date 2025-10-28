@@ -68,7 +68,8 @@ func GetLeetCodeStats(c *fiber.Ctx) error {
 		return c.JSON(card)
 	}
 
-	if resp.StatusCode == 200 {
+	switch resp.StatusCode {
+case 200:
 		var apiResp models.LeaderboardAPIResponse
 		if err := json.Unmarshal(bodyBytes, &apiResp); err != nil {
 			fmt.Printf("Error decoding response: %v\n", err)
@@ -96,9 +97,9 @@ func GetLeetCodeStats(c *fiber.Ctx) error {
 		card.LocalRanking = localRanking
 		card.Avatar = apiResp.Avatar
 		card.Problems = apiResp.Problems
-	} else if resp.StatusCode == 404 {
+	case 404:
 		card.Message = fmt.Sprintf("Discord user '%s' not found in leaderboard", discordUsername)
-	} else {
+	default:
 		card.Message = fmt.Sprintf("Lookup failed (status %d)", resp.StatusCode)
 	}
 

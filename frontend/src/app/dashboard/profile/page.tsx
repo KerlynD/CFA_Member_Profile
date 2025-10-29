@@ -77,6 +77,17 @@ interface GithubRepo {
   private: boolean;
 }
 
+interface LinkedInIntegration {
+  id: number;
+  linkedin_id: string;
+  profile_url: string;
+  first_name: string;
+  last_name: string;
+  headline: string;
+  avatar_url: string;
+  connected_at: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -136,11 +147,16 @@ export default function ProfilePage() {
   const [loadingDiscord, setLoadingDiscord] = useState(false);
   const [githubIntegration, setGithubIntegration] = useState<GithubIntegration | null>(null);
   const [loadingGithub, setLoadingGithub] = useState(false);
+  const [linkedinIntegration, setLinkedinIntegration] = useState<LinkedInIntegration | null>(null);
+  const [loadingLinkedin, setLoadingLinkedin] = useState(false);
   const [showRepoModal, setShowRepoModal] = useState(false);
   const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
   const [selectedRepos, setSelectedRepos] = useState<string[]>([]);
   const [loadingRepos, setLoadingRepos] = useState(false);
   const [savingRepos, setSavingRepos] = useState(false);
+  const [showLinkedInUrlModal, setShowLinkedInUrlModal] = useState(false);
+  const [linkedInUrlInput, setLinkedInUrlInput] = useState("");
+  const [savingLinkedInUrl, setSavingLinkedInUrl] = useState(false);
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -163,6 +179,7 @@ export default function ProfilePage() {
     fetchUser();
     fetchDiscordIntegration(); // Fetch Discord status on page load for verified badge
     fetchGithubIntegration(); // Fetch GitHub status on page load
+    fetchLinkedinIntegration(); // Fetch LinkedIn status on page load
     
     // Check for GitHub OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
@@ -173,6 +190,14 @@ export default function ProfilePage() {
       window.history.replaceState({}, "", "/dashboard/profile?tab=integrations");
       // Load repos and show modal
       handleSelectRepos();
+    }
+    
+    // Check for LinkedIn OAuth callback
+    if (urlParams.get("linkedin_connected") === "true") {
+      setSuccessMessage("LinkedIn connected successfully!");
+      setActiveTab("integrations");
+      // Clean up URL
+      window.history.replaceState({}, "", "/dashboard/profile?tab=integrations");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -186,6 +211,7 @@ export default function ProfilePage() {
       // Refresh integrations when tab is opened
       fetchDiscordIntegration();
       fetchGithubIntegration();
+      fetchLinkedinIntegration();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
@@ -722,6 +748,94 @@ export default function ProfilePage() {
   const handleConnectGithub = () => {
     // Redirect to GitHub OAuth
     window.location.href = "http://localhost:8080/api/auth/github/login";
+  };
+
+  // LinkedIn Integration Functions
+  const fetchLinkedinIntegration = async () => {
+    setLoadingLinkedin(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/linkedin", {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setLinkedinIntegration(data);
+      } else {
+        // Not linked yet - this is fine
+        setLinkedinIntegration(null);
+      }
+    } catch (error) {
+      console.error("Error fetching LinkedIn integration:", error);
+    } finally {
+      setLoadingLinkedin(false);
+    }
+  };
+
+  const handleConnectLinkedin = () => {
+    // Redirect to LinkedIn OAuth for integration
+    window.location.href = "http://localhost:8080/api/integrations/linkedin/connect";
+  };
+
+  const handleDisconnectLinkedin = async () => {
+    if (!confirm("Are you sure you want to disconnect LinkedIn?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/linkedin", {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        setLinkedinIntegration(null);
+        setSuccessMessage("LinkedIn disconnected successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to disconnect LinkedIn"}`);
+      }
+    } catch (error) {
+      console.error("Error disconnecting LinkedIn:", error);
+      alert("Failed to disconnect LinkedIn");
+    }
+  };
+
+  const handleUpdateLinkedInUrl = async () => {
+    if (!linkedInUrlInput.trim()) {
+      alert("Please enter a LinkedIn profile URL");
+      return;
+    }
+
+    setSavingLinkedInUrl(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/integrations/linkedin/url", {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ profile_url: linkedInUrlInput.trim() }),
+      });
+
+      if (res.ok) {
+        // Refresh LinkedIn integration to show updated URL
+        await fetchLinkedinIntegration();
+        setShowLinkedInUrlModal(false);
+        setLinkedInUrlInput("");
+        setSuccessMessage("LinkedIn profile URL updated successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to update LinkedIn URL"}`);
+      }
+    } catch (error) {
+      console.error("Error updating LinkedIn URL:", error);
+      alert("Failed to update LinkedIn URL");
+    } finally {
+      setSavingLinkedInUrl(false);
+    }
   };
 
   const handleSelectRepos = async () => {
@@ -1631,13 +1745,16 @@ export default function ProfilePage() {
                     )}
                   </div>
 
-                  {/* LinkedIn Placeholder Card */}
-                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 opacity-50 relative flex flex-col">
-                    <div className="absolute top-4 right-4">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full">
-                        Coming Soon
-                      </span>
-                    </div>
+                  {/* LinkedIn Integration Card */}
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all relative flex flex-col">
+                    {/* Connected Badge */}
+                    {linkedinIntegration && (
+                      <div className="absolute top-4 right-4">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                          Connected
+                        </span>
+                      </div>
+                    )}
 
                     <div className="w-16 h-16 bg-[#0A66C2] rounded-xl flex items-center justify-center mb-4">
                       <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -1648,17 +1765,77 @@ export default function ProfilePage() {
                     <h3 className="text-xl font-bold text-gray-900 mb-2">LinkedIn</h3>
                     
                     <div className="flex-1">
-                      <p className="text-sm text-gray-600 mb-4">
-                        Import your professional profile and work history.
-                      </p>
+                      {linkedinIntegration ? (
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-600 mb-2">
+                            {linkedinIntegration.profile_url.includes("profile-not-set") ? (
+                              <span className="text-gray-500">
+                                {linkedinIntegration.first_name} {linkedinIntegration.last_name}
+                              </span>
+                            ) : (
+                              <a href={linkedinIntegration.profile_url} target="_blank" rel="noopener noreferrer" className="text-[#0A66C2] hover:underline">
+                                {linkedinIntegration.first_name} {linkedinIntegration.last_name}
+                              </a>
+                            )}
+                          </p>
+                          {linkedinIntegration.headline && (
+                            <p className="text-sm text-gray-700 font-medium mb-2">
+                              {linkedinIntegration.headline}
+                            </p>
+                          )}
+                          {linkedinIntegration.profile_url.includes("profile-not-set") ? (
+                            <div className="text-yellow-700 flex items-center gap-1.5 mb-2">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold">Profile URL Not Set</span>
+                            </div>
+                          ) : (
+                            <div className="text-green-700 flex items-center gap-1.5">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold">Profile Connected</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 mb-4">
+                          Connect your LinkedIn profile to display your professional link in the directory.
+                        </p>
+                      )}
                     </div>
 
-                    <button
-                      disabled
-                      className="w-full px-4 py-2.5 bg-gray-100 text-gray-500 font-medium rounded-lg border border-gray-300 cursor-not-allowed"
-                    >
-                      Connect
-                    </button>
+                    {linkedinIntegration ? (
+                      <div className="space-y-2">
+                        {linkedinIntegration.profile_url.includes("profile-not-set") && (
+                          <button
+                            onClick={() => {
+                              setLinkedInUrlInput("");
+                              setShowLinkedInUrlModal(true);
+                            }}
+                            className="w-full px-4 py-2.5 bg-gradient-to-r from-[#0A66C2]/90 to-[#004182]/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-[#004182]/90 hover:to-[#003366]/90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                          >
+                            Set Profile URL
+                          </button>
+                        )}
+                        <button
+                          onClick={handleDisconnectLinkedin}
+                          disabled={loadingLinkedin}
+                          className="w-full px-4 py-2.5 bg-white/50 backdrop-blur-sm text-gray-700 text-sm font-semibold rounded-xl border border-gray-200/50 hover:bg-gray-50/80 hover:border-gray-300/50 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 disabled:hover:scale-100"
+                        >
+                          {loadingLinkedin ? "Loading..." : "Disconnect"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleConnectLinkedin}
+                        disabled={loadingLinkedin}
+                        className="w-full px-4 py-2.5 bg-gradient-to-r from-[#0A66C2]/90 to-[#004182]/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-[#004182]/90 hover:to-[#003366]/90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:hover:scale-100"
+                      >
+                        {loadingLinkedin ? "Loading..." : "Connect"}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -2763,6 +2940,68 @@ export default function ProfilePage() {
               >
                 {savingEducation ? "Updating..." : "Update Education"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LinkedIn URL Modal */}
+      {showLinkedInUrlModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            {/* Modal Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">Set LinkedIn Profile URL</h3>
+              <button
+                onClick={() => setShowLinkedInUrlModal(false)}
+                disabled={savingLinkedInUrl}
+                className="text-gray-400 hover:text-gray-600 transition disabled:opacity-50"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <p className="text-gray-600 text-sm mb-4">
+                Enter your LinkedIn profile URL so others can find you in the directory.
+              </p>
+              
+              <div className="mb-4">
+                <label htmlFor="linkedinUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                  LinkedIn Profile URL
+                </label>
+                <input
+                  type="url"
+                  id="linkedinUrl"
+                  value={linkedInUrlInput}
+                  onChange={(e) => setLinkedInUrlInput(e.target.value)}
+                  placeholder="https://www.linkedin.com/in/your-profile"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0A66C2] focus:border-transparent outline-none transition"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Example: https://www.linkedin.com/in/john-doe
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLinkedInUrlModal(false)}
+                  disabled={savingLinkedInUrl}
+                  className="flex-1 px-6 py-2.5 text-gray-600 font-medium rounded-xl border border-gray-200/50 bg-white/50 backdrop-blur-sm hover:bg-gray-50/80 hover:border-gray-300/50 transition-all duration-300 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateLinkedInUrl}
+                  disabled={savingLinkedInUrl || !linkedInUrlInput.trim()}
+                  className="flex-1 px-8 py-2.5 bg-gradient-to-r from-[#0A66C2]/90 to-[#004182]/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-[#004182]/90 hover:to-[#003366]/90 hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
+                >
+                  {savingLinkedInUrl ? "Saving..." : "Save URL"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

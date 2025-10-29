@@ -22,14 +22,14 @@ var linkedinOAuthConfig *oauth2.Config
 func InitLinkedinOAuth() {
 	/*
 		Loads environment variables from .env file
-		Creates a new OAuth2 configuration for LinkedIn authentication
-		Sets the RedirectURL, ClientID, ClientSecret, and Endpoint for LinkedIn authentication
+		Creates a new OAuth2 configuration for LinkedIn integration
+		Sets the RedirectURL, ClientID, ClientSecret, and Endpoint for LinkedIn integration
 	*/
 	linkedinOAuthConfig = &oauth2.Config{
 		RedirectURL:  os.Getenv("LINKEDIN_REDIRECT_URL"),
 		ClientID:     os.Getenv("LINKEDIN_CLIENT_ID"),
 		ClientSecret: os.Getenv("LINKEDIN_CLIENT_SECRET"),
-		Scopes:       []string{"r_emailaddress", "r_liteprofile", "r_organization_social"},
+		Scopes:       []string{"openid", "profile"},
 		Endpoint:     linkedin.Endpoint,
 	}
 }
@@ -195,33 +195,54 @@ func safeString(data map[string]interface{}, keys ...string) string {
 	return ""
 }
 
-func LinkedInLogin(c *fiber.Ctx) error {
-	// Redirect user to LinkedIn Login
+func LinkedInIntegrationLogin(c *fiber.Ctx) error {
+	// Redirect user to LinkedIn for integration (not login)
 	url := linkedinOAuthConfig.AuthCodeURL("randomstate", oauth2.AccessTypeOffline)
 	return c.Redirect(url)
 }
 
-func LinkedInCallback(c *fiber.Ctx) error {
+func LinkedInIntegrationCallback(c *fiber.Ctx) error {
 	/*
-		Handles the callback from LinkedIn
+		Handles the callback from LinkedIn integration
 		Exchanges the authorization code for a token
 		Gets the user info from LinkedIn
-		Creates/updates user in database
-		Generates a JWT and sets it as a cookie
-		Syncs work history and education from LinkedIn profile
-		Redirects to the frontend
+		Stores LinkedIn integration data for the current authenticated user
+		Redirects to the frontend profile page with success message
 	*/
 
+	// Check for error parameter first
+	if errorParam := c.Query("error"); errorParam != "" {
+		errorDesc := c.Query("error_description")
+		return c.Status(400).SendString(fmt.Sprintf("LinkedIn OAuth error: %s", errorDesc))
+	}
+
 	code := c.Query("code")
-	token, err := linkedinOAuthConfig.Exchange(context.Background(), code)
+	if code == "" {
+		return c.Status(400).SendString("No authorization code received from LinkedIn")
+	}
+
+	// Get & Verify JWT first (user must be logged in to integrate)
+	token := c.Cookies("session")
+	if token == "" {
+		return c.Status(fiber.StatusUnauthorized).SendString("Must be logged in to connect LinkedIn")
+	}
+
+	claims, err := utils.VerifyJWT(token)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("Invalid session")
+	}
+
+	userID := claims.UserID
+
+	oauthToken, err := linkedinOAuthConfig.Exchange(context.Background(), code)
 	if err != nil {
 		log.Println("Failed to exchange authorization code for token: ", err)
 		return c.Status(500).SendString("Failed to exchange authorization code for token")
 	}
 
-	// Get the user profile from LinkedIn
-	request, _ := http.NewRequest("GET", "https://api.linkedin.com/v2/me", nil)
-	request.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	// Get the user profile from LinkedIn using OpenID Connect
+	request, _ := http.NewRequest("GET", "https://api.linkedin.com/v2/userinfo", nil)
+	request.Header.Set("Authorization", "Bearer "+oauthToken.AccessToken)
 	response, err := http.DefaultClient.Do(request)
 
 	if err != nil {
@@ -233,171 +254,194 @@ func LinkedInCallback(c *fiber.Ctx) error {
 	var profile map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&profile)
 
-	// Get the user's email (separate endpoint)
-	emailReq, _ := http.NewRequest("GET", "https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))", nil)
-	emailReq.Header.Set("Authorization", "Bearer "+token.AccessToken)
-	emailResp, err := http.DefaultClient.Do(emailReq)
-	if err != nil {
-		log.Println("Failed to get email from LinkedIn: ", err)
-		return c.Status(500).SendString("Failed to get email from LinkedIn")
-	}
-	defer emailResp.Body.Close()
+	// Extract user data from OpenID Connect response
+	linkedinID, _ := profile["sub"].(string)
+	firstName, _ := profile["given_name"].(string)
+	lastName, _ := profile["family_name"].(string)
 
-	var emailData map[string]interface{}
-	json.NewDecoder(emailResp.Body).Decode(&emailData)
-
-	// Extract user data
-	linkedinID := profile["id"].(string)
-	firstName := profile["localizedFirstName"].(string)
-	lastName := profile["localizedLastName"].(string)
-	name := firstName + " " + lastName
-
-	// Extract email from nested structure
-	var email string
-	if elements, ok := emailData["elements"].([]interface{}); ok && len(elements) > 0 {
-		if elem, ok := elements[0].(map[string]interface{}); ok {
-			if handle, ok := elem["handle~"].(map[string]interface{}); ok {
-				email = handle["emailAddress"].(string)
-			}
-		}
+	// Get profile picture
+	var avatarURL string
+	if picture, ok := profile["picture"].(string); ok {
+		avatarURL = picture
 	}
 
-	if email == "" {
-		log.Println("Failed to extract email from LinkedIn")
-		return c.Status(500).SendString("Failed to get user email")
+	// Get headline - not available in OpenID Connect, will be empty
+	var headline string
+	if name, ok := profile["name"].(string); ok {
+		headline = name // Use full name as fallback
 	}
 
-	// Find or insert user and get their ID and admin status
-	var userID int
-	var isAdmin bool
+	// Create LinkedIn profile URL - OpenID Connect doesn't provide vanity URL
+	// Store a placeholder that users can update later
+	profileURL := "https://www.linkedin.com/in/profile-not-set"
 
-	err = db.Pool.QueryRow(context.Background(),
-		`INSERT INTO users (google_id, name, email)
-		 VALUES ($1, $2, $3)
-		 ON CONFLICT (email) DO UPDATE SET google_id=$1
-		 RETURNING id, is_admin`,
-		linkedinID, name, email,
-	).Scan(&userID, &isAdmin)
+	// Insert or update LinkedIn integration
+	_, err = db.Pool.Exec(context.Background(),
+		`INSERT INTO linkedin_integrations (user_id, linkedin_id, profile_url, first_name, last_name, headline, avatar_url, connected_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+		 ON CONFLICT (user_id) DO UPDATE SET 
+		 	linkedin_id = $2,
+		 	profile_url = $3,
+		 	first_name = $4,
+		 	last_name = $5,
+		 	headline = $6,
+		 	avatar_url = $7,
+		 	connected_at = NOW()`,
+		userID, linkedinID, profileURL, firstName, lastName, headline, avatarURL)
 
 	if err != nil {
 		log.Println("Database error: ", err)
 		return c.Status(500).SendString("Database error: " + err.Error())
 	}
 
-	// Generate JWT and set it as a cookie
-	jwtToken, err := utils.GenerateJWT(userID, email, isAdmin)
-	if err != nil {
-		log.Println("Failed to create JWT: ", err)
-		return c.Status(500).SendString("Failed to create JWT")
+	// Redirect to profile page with success message
+	return c.Redirect("http://localhost:3000/dashboard/profile?tab=integrations&linkedin_connected=true")
+}
+
+// GetLinkedInIntegration gets the current user's LinkedIn integration
+func GetLinkedInIntegration(c *fiber.Ctx) error {
+	// Get & Verify JWT
+	token := c.Cookies("session")
+	if token == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized/No JWT found",
+		})
 	}
 
-	c.Cookie(&fiber.Cookie{
-		Name:     "session",
-		Value:    jwtToken,
-		Expires:  time.Now().Add(24 * time.Hour),
-		HTTPOnly: true,
-		Secure:   false,
+	claims, err := utils.VerifyJWT(token)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Expired/Invalid JWT",
+		})
+	}
+
+	userID := claims.UserID
+
+	// Get LinkedIn integration
+	var integration struct {
+		ID          int       `json:"id"`
+		LinkedInID  string    `json:"linkedin_id"`
+		ProfileURL  string    `json:"profile_url"`
+		FirstName   string    `json:"first_name"`
+		LastName    string    `json:"last_name"`
+		Headline    string    `json:"headline"`
+		AvatarURL   string    `json:"avatar_url"`
+		ConnectedAt time.Time `json:"connected_at"`
+	}
+
+	err = db.Pool.QueryRow(context.Background(),
+		`SELECT id, linkedin_id, profile_url, first_name, last_name, headline, avatar_url, connected_at
+		 FROM linkedin_integrations 
+		 WHERE user_id = $1`,
+		userID,
+	).Scan(&integration.ID, &integration.LinkedInID, &integration.ProfileURL,
+		&integration.FirstName, &integration.LastName, &integration.Headline,
+		&integration.AvatarURL, &integration.ConnectedAt)
+
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "LinkedIn not connected",
+		})
+	}
+
+	return c.JSON(integration)
+}
+
+// DisconnectLinkedIn removes the LinkedIn integration for the current user
+func DisconnectLinkedIn(c *fiber.Ctx) error {
+	// Get & Verify JWT
+	token := c.Cookies("session")
+	if token == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized/No JWT found",
+		})
+	}
+
+	claims, err := utils.VerifyJWT(token)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Expired/Invalid JWT",
+		})
+	}
+
+	userID := claims.UserID
+
+	// Delete LinkedIn integration
+	_, err = db.Pool.Exec(context.Background(),
+		`DELETE FROM linkedin_integrations WHERE user_id = $1`,
+		userID)
+
+	if err != nil {
+		log.Println("Database error: ", err)
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to disconnect LinkedIn",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "LinkedIn disconnected successfully",
 	})
+}
 
-	// Fetch LinkedIn positions (work history)
-	posReq, _ := http.NewRequest("GET", "https://api.linkedin.com/v2/positions", nil)
-	posReq.Header.Set("Authorization", "Bearer "+token.AccessToken)
-	posResp, err := http.DefaultClient.Do(posReq)
-
-	if err != nil {
-		log.Println("Failed to get positions from LinkedIn: ", err)
-		// Don't fail the whole auth gotta just continue without syncing work history
-	} else {
-		defer posResp.Body.Close()
-
-		var positionsData map[string]interface{}
-		json.NewDecoder(posResp.Body).Decode(&positionsData)
-
-		// Loop through positions and insert into work_history
-		if positions, ok := positionsData["values"].([]interface{}); ok {
-			for _, p := range positions {
-				job, ok := p.(map[string]interface{})
-				if !ok {
-					continue
-				}
-
-				var company, title, location string
-
-				if companyData, ok := job["company"].(map[string]interface{}); ok {
-					if companyName, ok := companyData["name"].(string); ok {
-						company = companyName
-					}
-				}
-
-				if jobTitle, ok := job["title"].(string); ok {
-					title = jobTitle
-				}
-
-				if jobLocation, ok := job["locationName"].(string); ok {
-					location = jobLocation
-				}
-
-				// Get company logo URL from Clearbit
-				companyLogo := getCompanyLogoURL(company)
-
-				// Insert job into database with logo
-				_, err := db.Pool.Exec(context.Background(),
-					`INSERT INTO work_history (user_id, company, company_logo_url, title, location)
-					 VALUES ($1, $2, $3, $4, $5)
-					 ON CONFLICT DO NOTHING`,
-					userID, company, companyLogo, title, location)
-
-				if err != nil {
-					fmt.Println("Failed to insert work history:", err)
-				}
-			}
-		}
+// UpdateLinkedInProfileURL allows users to update their LinkedIn profile URL
+func UpdateLinkedInProfileURL(c *fiber.Ctx) error {
+	// Get & Verify JWT
+	token := c.Cookies("session")
+	if token == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized/No JWT found",
+		})
 	}
 
-	// Fetch LinkedIn education history
-	eduReq, _ := http.NewRequest("GET", "https://api.linkedin.com/v2/education", nil)
-	eduReq.Header.Set("Authorization", "Bearer "+token.AccessToken)
-	eduResp, err := http.DefaultClient.Do(eduReq)
-
+	claims, err := utils.VerifyJWT(token)
 	if err != nil {
-		log.Println("Failed to get education from LinkedIn: ", err)
-	} else {
-		defer eduResp.Body.Close()
-
-		var eduData map[string]interface{}
-		json.NewDecoder(eduResp.Body).Decode(&eduData)
-
-		// Loop through education and insert into education_history
-		if schools, ok := eduData["values"].([]interface{}); ok {
-			for _, s := range schools {
-				school, ok := s.(map[string]interface{})
-				if !ok {
-					continue
-				}
-
-				// Safely extract education details
-				schoolName := safeString(school, "schoolName")
-				degree := safeString(school, "degreeName")
-				field := safeString(school, "fieldOfStudy")
-				start := safeString(school, "startDate", "year")
-				end := safeString(school, "endDate", "year")
-
-				// Get school logo URL from Clearbit
-				logo := getSchoolLogoURL(schoolName)
-
-				// Insert education into database with logo
-				_, err := db.Pool.Exec(context.Background(),
-					`INSERT INTO education_history (user_id, school_name, school_logo_url, degree, field_of_study, start_date, end_date)
-					 VALUES ($1, $2, $3, $4, $5, $6, $7)
-					 ON CONFLICT DO NOTHING`,
-					userID, schoolName, logo, degree, field, start, end)
-
-				if err != nil {
-					fmt.Println("Failed to insert education history:", err)
-				}
-			}
-		}
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Expired/Invalid JWT",
+		})
 	}
 
-	return c.Redirect("http://localhost:3000") // Redirect to the frontend
+	userID := claims.UserID
+
+	// Parse request body
+	var requestBody struct {
+		ProfileURL string `json:"profile_url"`
+	}
+
+	if err := c.BodyParser(&requestBody); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Validate LinkedIn URL format
+	profileURL := strings.TrimSpace(requestBody.ProfileURL)
+	if profileURL == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Profile URL cannot be empty",
+		})
+	}
+
+	// Basic LinkedIn URL validation
+	if !strings.Contains(profileURL, "linkedin.com") {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Please provide a valid LinkedIn profile URL",
+		})
+	}
+
+	// Update LinkedIn profile URL
+	_, err = db.Pool.Exec(context.Background(),
+		`UPDATE linkedin_integrations 
+		 SET profile_url = $1 
+		 WHERE user_id = $2`,
+		profileURL, userID)
+
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to update LinkedIn profile URL",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "LinkedIn profile URL updated successfully",
+	})
 }

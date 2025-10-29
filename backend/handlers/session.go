@@ -35,10 +35,10 @@ func GetCurrentUser(c *fiber.Ctx) error {
 	var user models.User
 
 	err = db.Pool.QueryRow(context.Background(),
-		`SELECT id, name, email, picture, school, headline, location, is_admin FROM users WHERE id = $1`,
+		`SELECT id, name, email, picture, school, headline, location, is_admin, resume_url, resume_uploaded_at FROM users WHERE id = $1`,
 		claims.UserID,
 	).Scan(&user.ID, &user.Name, &user.Email, &user.Picture,
-		&user.School, &user.Headline, &user.Location, &user.IsAdmin)
+		&user.School, &user.Headline, &user.Location, &user.IsAdmin, &user.ResumeURL, &user.ResumeUploadedAt)
 
 	if err != nil {
 		log.Println("Error fetching user from database:", err, "UserID:", claims.UserID)

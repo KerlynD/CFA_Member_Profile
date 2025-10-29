@@ -14,6 +14,8 @@ interface User {
   headline: string | null;
   location: string | null;
   school: string | null;
+  resume_url: string | null;
+  resume_uploaded_at: string | null;
 }
 
 interface WorkHistory {
@@ -157,6 +159,10 @@ export default function ProfilePage() {
   const [showLinkedInUrlModal, setShowLinkedInUrlModal] = useState(false);
   const [linkedInUrlInput, setLinkedInUrlInput] = useState("");
   const [savingLinkedInUrl, setSavingLinkedInUrl] = useState(false);
+  
+  // Resume state
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [deletingResume, setDeletingResume] = useState(false);
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -838,6 +844,81 @@ export default function ProfilePage() {
     }
   };
 
+  const handleResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (file.type !== "application/pdf") {
+      alert("Please select a PDF file");
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size must be less than 5MB");
+      return;
+    }
+
+    setUploadingResume(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("http://localhost:8080/api/users/me/resume", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (res.ok) {
+        // Refresh user data to show new resume
+        await fetchUser();
+        setSuccessMessage("Resume uploaded successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to upload resume"}`);
+      }
+    } catch (error) {
+      console.error("Error uploading resume:", error);
+      alert("Failed to upload resume");
+    } finally {
+      setUploadingResume(false);
+      // Reset the input
+      event.target.value = "";
+    }
+  };
+
+  const handleResumeDelete = async () => {
+    if (!confirm("Are you sure you want to delete your resume?")) {
+      return;
+    }
+
+    setDeletingResume(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/users/me/resume", {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        // Refresh user data to remove resume
+        await fetchUser();
+        setSuccessMessage("Resume deleted successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        const error = await res.json();
+        alert(`Error: ${error.error || "Failed to delete resume"}`);
+      }
+    } catch (error) {
+      console.error("Error deleting resume:", error);
+      alert("Failed to delete resume");
+    } finally {
+      setDeletingResume(false);
+    }
+  };
+
   const handleSelectRepos = async () => {
     // Fetch user's repositories
     setLoadingRepos(true);
@@ -1197,6 +1278,19 @@ export default function ProfilePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
               Integrations
+            </button>
+            <button
+              onClick={() => setActiveTab("resume")}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-all duration-300 flex items-center gap-2 relative ${
+                activeTab === "resume"
+                  ? "border-indigo-400 text-indigo-600 bg-gradient-to-r from-indigo-50/80 to-purple-50/80 backdrop-blur-sm"
+                  : "border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-200 hover:bg-gray-50/50"
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Resume
             </button>
           </nav>
         </div>
@@ -1839,6 +1933,106 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === "resume" && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Resume</h2>
+              <p className="text-gray-600 mb-8">
+                Upload your resume to share with potential employers and networking contacts.
+              </p>
+
+              {/* Success Message */}
+              {successMessage && (
+                <div className={`mb-6 p-4 rounded-lg flex items-center gap-2 ${
+                  successMessage.startsWith("Error") 
+                    ? "bg-red-50 text-red-800 border border-red-200" 
+                    : "bg-green-50 text-green-800 border border-green-200"
+                }`}>
+                  {!successMessage.startsWith("Error") && (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span className="font-medium">{successMessage}</span>
+                </div>
+              )}
+
+              {/* Resume Card */}
+              <div className="bg-white border-2 border-gray-200 rounded-xl p-8 hover:shadow-lg transition-all">
+                <div className="text-center">
+                  {/* Resume Icon */}
+                  <div className="w-20 h-20 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+
+                  {user?.resume_url ? (
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Resume Uploaded</h3>
+                      <p className="text-gray-600 mb-6">
+                        {user.resume_uploaded_at && (
+                          <>Uploaded on {new Date(user.resume_uploaded_at).toLocaleDateString()}</>
+                        )}
+                      </p>
+                      
+                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <label className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500/90 to-emerald-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-green-600/90 hover:to-emerald-600/90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            onChange={handleResumeUpload}
+                            disabled={uploadingResume}
+                            className="hidden"
+                          />
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          {uploadingResume ? "Uploading..." : "Replace Resume"}
+                        </label>
+
+                        <button
+                          onClick={handleResumeDelete}
+                          disabled={deletingResume}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-white/50 backdrop-blur-sm text-red-600 font-semibold rounded-xl border border-red-200/50 hover:bg-red-50/80 hover:border-red-300/50 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 disabled:hover:scale-100"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          {deletingResume ? "Deleting..." : "Delete Resume"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">No Resume Uploaded</h3>
+                      <p className="text-gray-600 mb-6">
+                        Upload your resume to share with employers and make networking easier.
+                      </p>
+                      
+                      <label className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-500/90 to-purple-500/90 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:from-indigo-600/90 hover:to-purple-600/90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer">
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={handleResumeUpload}
+                          disabled={uploadingResume}
+                          className="hidden"
+                        />
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        {uploadingResume ? "Uploading..." : "Upload Resume"}
+                      </label>
+                      
+                      <p className="text-sm text-gray-500 mt-4">
+                        Only PDF files are accepted. Maximum file size: 5MB
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

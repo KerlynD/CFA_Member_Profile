@@ -55,6 +55,8 @@ func RegisterRoutes(app *fiber.App) {
 	auth.Get("/me", handlers.GetCurrentUser)
 	auth.Put("/users/me", handlers.UpdateMyProfile)
 	auth.Post("/users/me/picture", handlers.UploadProfilePicture)
+	auth.Post("/users/me/resume", handlers.UploadResume)
+	auth.Delete("/users/me/resume", handlers.DeleteResume)
 	auth.Put("/users/:id", handlers.UpdateUser)
 
 	// Integrations

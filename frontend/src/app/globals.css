@@ -38,3 +38,100 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Custom gradient animations for login page */
+@keyframes gradient-x {
+  0%, 100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes gradient-slow {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes gradient-fast {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 8s ease-in-out infinite;
+}
+
+.animate-gradient-slow {
+  background-size: 400% 400%;
+  animation: gradient-slow 6s ease-in-out infinite;
+}
+
+.animate-gradient-fast {
+  background-size: 400% 400%;
+  animation: gradient-fast 2s ease-in-out infinite;
+}
+
+/* Wavy authentication animation */
+@keyframes wave {
+  0% {
+    transform: translateX(-100%) translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateX(50%) translateY(-20px) rotate(180deg);
+  }
+  100% {
+    transform: translateX(200%) translateY(0) rotate(360deg);
+  }
+}
+
+.wave-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(156, 163, 175, 0.1) 50%,
+    rgba(209, 213, 219, 0.2) 60%,
+    rgba(243, 244, 246, 0.3) 70%,
+    rgba(156, 163, 175, 0.1) 80%,
+    transparent 90%
+  );
+  animation: wave 3s ease-in-out infinite;
+}
+
+.wave-delay-1 {
+  animation-delay: -1s;
+  background: linear-gradient(
+    -45deg,
+    transparent 30%,
+    rgba(209, 213, 219, 0.15) 50%,
+    rgba(243, 244, 246, 0.25) 60%,
+    rgba(156, 163, 175, 0.15) 70%,
+    transparent 80%
+  );
+}
+
+.wave-delay-2 {
+  animation-delay: -2s;
+  background: linear-gradient(
+    90deg,
+    transparent 40%,
+    rgba(243, 244, 246, 0.1) 50%,
+    rgba(209, 213, 219, 0.2) 60%,
+    rgba(156, 163, 175, 0.1) 70%,
+    transparent 85%
+  );
+}

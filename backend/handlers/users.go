@@ -243,6 +243,43 @@ func GetUserGithub(c *fiber.Ctx) error {
 	})
 }
 
+// GET /api/users/:id/linkedin
+func GetUserLinkedIn(c *fiber.Ctx) error {
+	/*
+		Gets LinkedIn integration data for a specific user (public endpoint)
+	*/
+
+	id := c.Params("id")
+
+	var integration struct {
+		ID          int       `json:"id"`
+		LinkedInID  string    `json:"linkedin_id"`
+		ProfileURL  string    `json:"profile_url"`
+		FirstName   string    `json:"first_name"`
+		LastName    string    `json:"last_name"`
+		Headline    string    `json:"headline"`
+		AvatarURL   string    `json:"avatar_url"`
+		ConnectedAt time.Time `json:"connected_at"`
+	}
+
+	err := db.Pool.QueryRow(context.Background(),
+		`SELECT id, linkedin_id, profile_url, first_name, last_name, headline, avatar_url, connected_at
+		 FROM linkedin_integrations 
+		 WHERE user_id = $1`,
+		id,
+	).Scan(&integration.ID, &integration.LinkedInID, &integration.ProfileURL,
+		&integration.FirstName, &integration.LastName, &integration.Headline,
+		&integration.AvatarURL, &integration.ConnectedAt)
+
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "LinkedIn not connected",
+		})
+	}
+
+	return c.JSON(integration)
+}
+
 // PUT /api/users/:id
 func UpdateUser(c *fiber.Ctx) error {
 	/*

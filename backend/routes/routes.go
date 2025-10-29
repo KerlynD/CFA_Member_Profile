@@ -11,9 +11,9 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/api/auth/google/login", handlers.GoogleLogin)
 	app.Get("/api/auth/google/callback", handlers.GoogleCallback)
 
-	// LinkedIn Auth
-	app.Get("/api/auth/linkedin/login", handlers.LinkedInLogin)
-	app.Get("/api/auth/linkedin/callback", handlers.LinkedInCallback)
+	// LinkedIn Integration (not auth)
+	app.Get("/api/integrations/linkedin/connect", handlers.LinkedInIntegrationLogin)
+	app.Get("/api/integrations/linkedin/callback", handlers.LinkedInIntegrationCallback)
 
 	// Discord Auth
 	app.Get("/api/auth/discord/login", handlers.DiscordLogin)
@@ -35,6 +35,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/api/users/:id/work", handlers.GetUserWork)
 	app.Get("/api/users/:id/events", handlers.GetUserEvents)
 	app.Get("/api/users/:id/github", handlers.GetUserGithub)
+	app.Get("/api/users/:id/linkedin", handlers.GetUserLinkedIn)
 
 	// Offers
 	app.Get("/api/offers", handlers.GetOffers)
@@ -73,6 +74,11 @@ func RegisterRoutes(app *fiber.App) {
 	auth.Get("/integrations/github", handlers.GetGithubIntegration)
 	auth.Get("/integrations/github/repos", handlers.GetGithubRepos)
 	auth.Post("/integrations/github/repos", handlers.SaveTopRepos)
+
+	// LinkedIn Integration
+	auth.Get("/integrations/linkedin", handlers.GetLinkedInIntegration)
+	auth.Delete("/integrations/linkedin", handlers.DisconnectLinkedIn)
+	auth.Put("/integrations/linkedin/url", handlers.UpdateLinkedInProfileURL)
 
 	// Work History
 	auth.Post("/work_history", handlers.AddWorkHistory)

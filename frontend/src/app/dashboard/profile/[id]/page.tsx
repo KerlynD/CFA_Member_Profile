@@ -64,6 +64,17 @@ type GithubIntegration = {
     detailed_repos?: GithubRepo[];
 }
 
+type LinkedInIntegration = {
+    id: number;
+    linkedin_id: string;
+    profile_url: string;
+    first_name: string;
+    last_name: string;
+    headline: string;
+    avatar_url: string;
+    connected_at: string;
+}
+
 type UserEvents = {
     count: number;
     events: any[];
@@ -163,6 +174,19 @@ const fetchUserGithub = async (id: string): Promise<GithubIntegration> => {
     }
 };
 
+const fetchUserLinkedIn = async (id: string): Promise<LinkedInIntegration | null> => {
+    try {
+        const response = await fetch(`/api/users/${id}/linkedin`);
+        if (!response.ok) {
+            return null; // LinkedIn not connected
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching LinkedIn integration:', error);
+        return null;
+    }
+};
+
 export default function UserProfile() {
     const params = useParams();
     const userId = params.id as string;
@@ -172,6 +196,7 @@ export default function UserProfile() {
     const [work, setWork] = useState<WorkHistory[]>([]);
     const [userEvents, setUserEvents] = useState<UserEvents>({ count: 0, events: [] });
     const [github, setGithub] = useState<GithubIntegration>({ connected: false });
+    const [linkedin, setLinkedin] = useState<LinkedInIntegration | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -179,12 +204,13 @@ export default function UserProfile() {
             if (!userId) return;
             
             setLoading(true);
-            const [userProfile, educationHistory, workHistory, eventsData, githubData] = await Promise.all([
+            const [userProfile, educationHistory, workHistory, eventsData, githubData, linkedinData] = await Promise.all([
                 fetchUserProfile(userId),
                 fetchUserEducation(userId),
                 fetchUserWork(userId),
                 fetchUserEvents(userId),
-                fetchUserGithub(userId)
+                fetchUserGithub(userId),
+                fetchUserLinkedIn(userId)
             ]);
             
             setUser(userProfile);
@@ -192,6 +218,7 @@ export default function UserProfile() {
             setWork(workHistory);
             setUserEvents(eventsData);
             setGithub(githubData);
+            setLinkedin(linkedinData);
             setLoading(false);
         };
 
@@ -237,21 +264,32 @@ export default function UserProfile() {
                         <p className="text-gray-600 mb-4">{user.headline || "No headline provided"}</p>
                         
                         {/* Social Links */}
-                        <div className="flex gap-2 mb-4">
-                            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                                <Image src="/assets/linkedin.svg" alt="LinkedIn" width={16} height={16} />
+                        {((linkedin && !linkedin.profile_url.includes("profile-not-set")) || github.connected) && (
+                            <div className="flex gap-2 mb-4">
+                                {linkedin && !linkedin.profile_url.includes("profile-not-set") && (
+                                    <a 
+                                        href={linkedin.profile_url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center hover:bg-blue-200 transition-colors"
+                                        title={`${linkedin.first_name} ${linkedin.last_name} on LinkedIn`}
+                                    >
+                                        <Image src="/assets/linkedin.svg" alt="LinkedIn" width={16} height={16} />
+                                    </a>
+                                )}
+                                {github.connected && (
+                                    <a 
+                                        href={github.profile_url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center hover:bg-purple-200 transition-colors"
+                                        title={`${github.username} on GitHub`}
+                                    >
+                                        <Image src="/assets/github.svg" alt="GitHub" width={16} height={16} />
+                                    </a>
+                                )}
                             </div>
-                            {github.connected && (
-                                <a 
-                                    href={github.profile_url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center hover:bg-purple-200 transition-colors"
-                                >
-                                    <Image src="/assets/github.svg" alt="GitHub" width={16} height={16} />
-                                </a>
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>

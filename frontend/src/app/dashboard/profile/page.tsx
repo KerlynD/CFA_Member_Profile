@@ -753,9 +753,25 @@ export default function ProfilePage() {
     }
   };
 
-  const handleConnectGithub = () => {
-    // Redirect to GitHub OAuth
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/github/login`;
+  const handleConnectGithub = async () => {
+    // Call the GitHub login endpoint with authentication
+    // The backend will redirect to GitHub OAuth with user ID in state
+    try {
+      const response = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/github/login`);
+      
+      if (response.ok) {
+        // Backend returns redirect URL, navigate to it
+        const data = await response.json();
+        if (data.redirect_url) {
+          window.location.href = data.redirect_url;
+        }
+      } else {
+        alert("Failed to initiate GitHub connection. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error connecting GitHub:", error);
+      alert("Failed to connect GitHub");
+    }
   };
 
   // LinkedIn Integration Functions
@@ -779,9 +795,25 @@ export default function ProfilePage() {
     }
   };
 
-  const handleConnectLinkedin = () => {
-    // Redirect to LinkedIn OAuth for integration
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin/connect`;
+  const handleConnectLinkedin = async () => {
+    // Call the LinkedIn login endpoint with authentication
+    // The backend will redirect to LinkedIn OAuth with user ID in state
+    try {
+      const response = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin/connect`);
+      
+      if (response.ok) {
+        // Backend returns redirect URL, navigate to it
+        const data = await response.json();
+        if (data.redirect_url) {
+          window.location.href = data.redirect_url;
+        }
+      } else {
+        alert("Failed to initiate LinkedIn connection. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error connecting LinkedIn:", error);
+      alert("Failed to connect LinkedIn");
+    }
   };
 
   const handleDisconnectLinkedin = async () => {

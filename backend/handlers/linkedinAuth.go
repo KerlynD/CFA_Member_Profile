@@ -196,9 +196,25 @@ func safeString(data map[string]interface{}, keys ...string) string {
 }
 
 func LinkedInIntegrationLogin(c *fiber.Ctx) error {
-	// Redirect user to LinkedIn for integration (not login)
-	url := linkedinOAuthConfig.AuthCodeURL("randomstate", oauth2.AccessTypeOffline)
-	return c.Redirect(url)
+	// Verify user is authenticated first
+	jwtToken := utils.GetTokenFromRequest(c)
+	if jwtToken == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	claims, err := utils.VerifyJWT(jwtToken)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	// Store user ID in state parameter to pass through OAuth flow
+	state := fmt.Sprintf("%d", claims.UserID)
+
+	// Generate LinkedIn OAuth URL with user ID in state
+	url := linkedinOAuthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
+
+	// Return the redirect URL as JSON for frontend to handle
+	return c.JSON(fiber.Map{"redirect_url": url})
 }
 
 func LinkedInIntegrationCallback(c *fiber.Ctx) error {
@@ -210,34 +226,35 @@ func LinkedInIntegrationCallback(c *fiber.Ctx) error {
 		Redirects to the frontend profile page with success message
 	*/
 
+	code := c.Query("code")
+	state := c.Query("state") // This contains the user ID
+
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+
 	// Check for error parameter first
 	if errorParam := c.Query("error"); errorParam != "" {
 		errorDesc := c.Query("error_description")
-		return c.Status(400).SendString(fmt.Sprintf("LinkedIn OAuth error: %s", errorDesc))
+		return c.Redirect(frontendURL + "/dashboard/profile?error=linkedin_auth_failed&details=" + errorDesc)
 	}
 
-	code := c.Query("code")
 	if code == "" {
-		return c.Status(400).SendString("No authorization code received from LinkedIn")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=linkedin_auth_failed")
 	}
 
-	// Get & Verify JWT first (user must be logged in to integrate)
-	token := utils.GetTokenFromRequest(c)
-	if token == "" {
-		return c.Status(fiber.StatusUnauthorized).SendString("Must be logged in to connect LinkedIn")
+	if state == "" {
+		return c.Redirect(frontendURL + "/dashboard/profile?error=linkedin_auth_failed")
 	}
 
-	claims, err := utils.VerifyJWT(token)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).SendString("Invalid session")
-	}
-
-	userID := claims.UserID
+	// Get user ID from state parameter (passed through OAuth flow)
+	userID := state
 
 	oauthToken, err := linkedinOAuthConfig.Exchange(context.Background(), code)
 	if err != nil {
 		log.Println("Failed to exchange authorization code for token: ", err)
-		return c.Status(500).SendString("Failed to exchange authorization code for token")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=linkedin_token_exchange_failed")
 	}
 
 	// Get the user profile from LinkedIn using OpenID Connect
@@ -247,7 +264,7 @@ func LinkedInIntegrationCallback(c *fiber.Ctx) error {
 
 	if err != nil {
 		log.Println("Failed to get user info from LinkedIn: ", err)
-		return c.Status(500).SendString("Failed to get user info from LinkedIn")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=linkedin_userinfo_failed")
 	}
 	defer response.Body.Close()
 
@@ -291,14 +308,10 @@ func LinkedInIntegrationCallback(c *fiber.Ctx) error {
 
 	if err != nil {
 		log.Println("Database error: ", err)
-		return c.Status(500).SendString("Database error: " + err.Error())
+		return c.Redirect(frontendURL + "/dashboard/profile?error=linkedin_save_failed")
 	}
 
 	// Redirect to profile page with success message
-	frontendURL := os.Getenv("FRONTEND_URL")
-	if frontendURL == "" {
-		frontendURL = "http://localhost:3000"
-	}
 	return c.Redirect(frontendURL + "/dashboard/profile?tab=integrations&linkedin_connected=true")
 }
 

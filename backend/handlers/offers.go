@@ -51,7 +51,7 @@ func AddOffer(c *fiber.Ctx) error {
 	*/
 
 	// Get & Verify JWT to get the authenticated user's ID
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",

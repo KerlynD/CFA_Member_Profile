@@ -17,18 +17,8 @@ func GetCurrentUser(c *fiber.Ctx) error {
 		Returns a JSON object of the user
 	*/
 
-	// Get & Verify JWT - check Authorization header first, then cookie
-	token := c.Get("Authorization")
-	if token != "" {
-		// Remove "Bearer " prefix if present
-		if len(token) > 7 && token[:7] == "Bearer " {
-			token = token[7:]
-		}
-	} else {
-		// Fallback to cookie
-		token = c.Cookies("session")
-	}
-
+	// Get & Verify JWT
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",

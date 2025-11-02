@@ -20,7 +20,8 @@ import (
 // GET /api/leetcode/lookup
 func GetLeetCodeStats(c *fiber.Ctx) error {
 	// Verify current user
-	claims, err := utils.VerifyJWT(c.Cookies("session"))
+	token := utils.GetTokenFromRequest(c)
+	claims, err := utils.VerifyJWT(token)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.LeaderboardCard{
 			Available: false,
@@ -69,7 +70,7 @@ func GetLeetCodeStats(c *fiber.Ctx) error {
 	}
 
 	switch resp.StatusCode {
-case 200:
+	case 200:
 		var apiResp models.LeaderboardAPIResponse
 		if err := json.Unmarshal(bodyBytes, &apiResp); err != nil {
 			fmt.Printf("Error decoding response: %v\n", err)

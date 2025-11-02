@@ -41,8 +41,14 @@ export default function DashboardPage() {
     const fetchUserData = async () => {
       try {
         // Check authentication and get user info
+        console.log("🔍 Dashboard - Fetching user data...");
+        console.log("🔍 Dashboard - Token in localStorage:", localStorage.getItem("session_token") ? "Yes" : "No");
+        
         const userResponse = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`);
+        console.log("🔍 Dashboard - Response status:", userResponse.status);
+        
         if (userResponse.status === 401) {
+          console.error("❌ Dashboard - Unauthorized (401), redirecting to login");
           router.push("/login");
           return;
         }

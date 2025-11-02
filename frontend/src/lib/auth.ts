@@ -38,7 +38,12 @@ export async function authenticatedFetch(
   const headers = new Headers(options.headers);
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
+    console.log("🔐 authenticatedFetch - Adding Authorization header");
+  } else {
+    console.warn("⚠️ authenticatedFetch - No token found in localStorage");
   }
+
+  console.log("📡 authenticatedFetch - URL:", url);
 
   return fetch(url, {
     ...options,

@@ -134,7 +134,7 @@ export default function LeetcodeLeaderboard() {
         }
 
         // Cache miss or expired - fetch fresh data
-        const res = await fetch("http://localhost:8080/api/leetcode/lookup", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/leetcode/lookup`, {
           credentials: "include",
         });
         const data = await res.json();

@@ -40,7 +40,7 @@ export default function DashboardPage() {
     const fetchUserData = async () => {
       try {
         // Check authentication and get user info
-        const userResponse = await fetch("/api/me", { credentials: "include" });
+        const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, { credentials: "include" });
         if (userResponse.status === 401) {
           router.push("/login");
           return;
@@ -51,14 +51,14 @@ export default function DashboardPage() {
           setUser(userData);
           
           // Fetch user's events
-          const eventsResponse = await fetch(`/api/users/${userData.id}/events`);
+          const eventsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userData.id}/events`, { credentials: "include" });
           if (eventsResponse.ok) {
             const eventsData = await eventsResponse.json();
             setUserEvents(eventsData);
           }
 
           // Fetch upcoming events
-          const upcomingResponse = await fetch('/api/events');
+          const upcomingResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events`, { credentials: "include" });
           if (upcomingResponse.ok) {
             const allEvents = await upcomingResponse.json();
             const now = new Date();

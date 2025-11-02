@@ -224,7 +224,7 @@ export default function ProfilePage() {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/me", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
         credentials: "include",
       });
 
@@ -296,7 +296,7 @@ export default function ProfilePage() {
   const fetchWorkHistory = async () => {
     setLoadingWorkHistory(true);
     try {
-      const res = await fetch("http://localhost:8080/api/work_history", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history`, {
         credentials: "include",
       });
 
@@ -340,7 +340,7 @@ export default function ProfilePage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8080/api/work_history/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -367,7 +367,7 @@ export default function ProfilePage() {
         ? "Present" 
         : `${workFormData.endMonth} ${workFormData.endYear}`;
 
-      const res = await fetch("http://localhost:8080/api/work_history", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -423,7 +423,7 @@ export default function ProfilePage() {
         ? "Present" 
         : `${workFormData.endMonth} ${workFormData.endYear}`;
 
-      const res = await fetch(`http://localhost:8080/api/work_history/${editingWorkId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history/${editingWorkId}`, {
         method: "PUT",
         credentials: "include",
         headers: {
@@ -498,7 +498,7 @@ export default function ProfilePage() {
   const fetchEducationHistory = async () => {
     setLoadingEducationHistory(true);
     try {
-      const res = await fetch("http://localhost:8080/api/education_history", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history`, {
         credentials: "include",
       });
 
@@ -542,7 +542,7 @@ export default function ProfilePage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8080/api/education_history/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -569,7 +569,7 @@ export default function ProfilePage() {
         ? "Present" 
         : `${educationFormData.endMonth} ${educationFormData.endYear}`;
 
-      const res = await fetch("http://localhost:8080/api/education_history", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -625,7 +625,7 @@ export default function ProfilePage() {
         ? "Present" 
         : `${educationFormData.endMonth} ${educationFormData.endYear}`;
 
-      const res = await fetch(`http://localhost:8080/api/education_history/${editingEducationId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history/${editingEducationId}`, {
         method: "PUT",
         credentials: "include",
         headers: {
@@ -676,7 +676,7 @@ export default function ProfilePage() {
   const fetchDiscordIntegration = async () => {
     setLoadingDiscord(true);
     try {
-      const res = await fetch("http://localhost:8080/api/integrations/discord", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/discord`, {
         credentials: "include",
       });
 
@@ -696,12 +696,12 @@ export default function ProfilePage() {
 
   const handleConnectDiscord = () => {
     // Redirect to Discord OAuth
-    window.location.href = "http://localhost:8080/api/auth/discord/login";
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/discord/login`;
   };
 
   const handleVerifyDiscord = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/integrations/discord/verify", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/discord/verify`, {
         method: "POST",
         credentials: "include",
       });
@@ -731,7 +731,7 @@ export default function ProfilePage() {
   const fetchGithubIntegration = async () => {
     setLoadingGithub(true);
     try {
-      const res = await fetch("http://localhost:8080/api/integrations/github", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/github`, {
         credentials: "include",
       });
 
@@ -753,14 +753,14 @@ export default function ProfilePage() {
 
   const handleConnectGithub = () => {
     // Redirect to GitHub OAuth
-    window.location.href = "http://localhost:8080/api/auth/github/login";
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/github/login`;
   };
 
   // LinkedIn Integration Functions
   const fetchLinkedinIntegration = async () => {
     setLoadingLinkedin(true);
     try {
-      const res = await fetch("http://localhost:8080/api/integrations/linkedin", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin`, {
         credentials: "include",
       });
 
@@ -780,7 +780,7 @@ export default function ProfilePage() {
 
   const handleConnectLinkedin = () => {
     // Redirect to LinkedIn OAuth for integration
-    window.location.href = "http://localhost:8080/api/integrations/linkedin/connect";
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin/connect`;
   };
 
   const handleDisconnectLinkedin = async () => {
@@ -789,7 +789,7 @@ export default function ProfilePage() {
     }
 
     try {
-      const res = await fetch("http://localhost:8080/api/integrations/linkedin", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -816,7 +816,7 @@ export default function ProfilePage() {
 
     setSavingLinkedInUrl(true);
     try {
-      const res = await fetch("http://localhost:8080/api/integrations/linkedin/url", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin/url`, {
         method: "PUT",
         credentials: "include",
         headers: {
@@ -865,7 +865,7 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("http://localhost:8080/api/users/me/resume", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/resume`, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -897,7 +897,7 @@ export default function ProfilePage() {
 
     setDeletingResume(true);
     try {
-      const res = await fetch("http://localhost:8080/api/users/me/resume", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/resume`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -923,7 +923,7 @@ export default function ProfilePage() {
     // Fetch user's repositories
     setLoadingRepos(true);
     try {
-      const res = await fetch("http://localhost:8080/api/integrations/github/repos", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/github/repos`, {
         credentials: "include",
       });
 
@@ -957,7 +957,7 @@ export default function ProfilePage() {
   const handleSaveRepos = async () => {
     setSavingRepos(true);
     try {
-      const res = await fetch("http://localhost:8080/api/integrations/github/repos", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/github/repos`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -1065,7 +1065,7 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append("file", croppedBlob, "profile-photo.jpg");
 
-      const res = await fetch("http://localhost:8080/api/users/me/picture", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/picture`, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -1098,7 +1098,7 @@ export default function ProfilePage() {
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       
-      const res = await fetch("http://localhost:8080/api/users/me", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me`, {
         method: "PUT",
         credentials: "include",
         headers: {

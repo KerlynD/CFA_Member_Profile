@@ -28,15 +28,12 @@ const nextConfig: NextConfig = {
         hostname: 'i.pravatar.cc',
         pathname: '/**',
       },
-    ],
-  },
-  async rewrites() {
-    return [
       {
-        source: '/api/:path*',
-        destination: 'http://127.0.0.1:8080/api/:path*',
+        protocol: 'https',
+        hostname: 'cfamemberprofile-production.up.railway.app',
+        pathname: '/**',
       },
-    ];
+    ],
   },
 };
 

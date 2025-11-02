@@ -103,7 +103,12 @@ func GoogleCallback(c *fiber.Ctx) error {
 		SameSite: "Lax",
 	})
 
-	return c.Redirect("http://localhost:3000" + "/dashboard") // Redirect to the frontend
+	// Redirect to the frontend
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+	return c.Redirect(frontendURL + "/dashboard")
 }
 
 func Logout(c *fiber.Ctx) error {

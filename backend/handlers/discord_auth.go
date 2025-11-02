@@ -169,7 +169,11 @@ func DiscordCallback(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to save to database: " + err.Error()})
 	}
 
-	return c.Redirect("http://localhost:3000/dashboard/profile")
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+	return c.Redirect(frontendURL + "/dashboard/profile")
 }
 
 // POST /api/integrations/discord/verify

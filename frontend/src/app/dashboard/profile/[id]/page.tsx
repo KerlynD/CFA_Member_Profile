@@ -111,7 +111,7 @@ const ProfileImage = ({ src, alt, className }: { src: string; alt: string; class
 /*----------------API Functions----------*/
 const fetchUserProfile = async (id: string): Promise<User | null> => {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}`, { credentials: "include" });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}`);
         if (!response.ok) {
             throw new Error('Failed to fetch user profile');
         }
@@ -124,7 +124,7 @@ const fetchUserProfile = async (id: string): Promise<User | null> => {
 
 const fetchUserEducation = async (id: string): Promise<EducationHistory[]> => {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}/education`, { credentials: "include" });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}/education`);
         if (!response.ok) {
             throw new Error('Failed to fetch education history');
         }
@@ -137,7 +137,7 @@ const fetchUserEducation = async (id: string): Promise<EducationHistory[]> => {
 
 const fetchUserWork = async (id: string): Promise<WorkHistory[]> => {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}/work`, { credentials: "include" });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}/work`);
         if (!response.ok) {
             throw new Error('Failed to fetch work history');
         }
@@ -150,7 +150,7 @@ const fetchUserWork = async (id: string): Promise<WorkHistory[]> => {
 
 const fetchUserEvents = async (id: string): Promise<UserEvents> => {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}/events`, { credentials: "include" });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}/events`);
         if (!response.ok) {
             throw new Error('Failed to fetch user events');
         }
@@ -163,7 +163,7 @@ const fetchUserEvents = async (id: string): Promise<UserEvents> => {
 
 const fetchUserGithub = async (id: string): Promise<GithubIntegration> => {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}/github`, { credentials: "include" });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}/github`);
         if (!response.ok) {
             throw new Error('Failed to fetch GitHub integration');
         }
@@ -176,7 +176,7 @@ const fetchUserGithub = async (id: string): Promise<GithubIntegration> => {
 
 const fetchUserLinkedIn = async (id: string): Promise<LinkedInIntegration | null> => {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}/linkedin`, { credentials: "include" });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}/linkedin`);
         if (!response.ok) {
             return null; // LinkedIn not connected
         }

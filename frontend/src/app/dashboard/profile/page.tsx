@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
+import { authenticatedFetch } from "@/lib/auth";
 
 interface User {
   id: number;
@@ -224,9 +225,7 @@ export default function ProfilePage() {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
-        credentials: "include",
-      });
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`);
 
       if (res.status === 401) {
         console.log("Unauthorized - redirecting to login");
@@ -296,9 +295,7 @@ export default function ProfilePage() {
   const fetchWorkHistory = async () => {
     setLoadingWorkHistory(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history`, {
-        credentials: "include",
-      });
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history`);
 
       if (res.ok) {
         const data = await res.json();
@@ -340,9 +337,8 @@ export default function ProfilePage() {
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history/${id}`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
 
       if (res.ok) {
@@ -367,9 +363,8 @@ export default function ProfilePage() {
         ? "Present" 
         : `${workFormData.endMonth} ${workFormData.endYear}`;
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -423,9 +418,8 @@ export default function ProfilePage() {
         ? "Present" 
         : `${workFormData.endMonth} ${workFormData.endYear}`;
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history/${editingWorkId}`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/work_history/${editingWorkId}`, {
         method: "PUT",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -498,9 +492,7 @@ export default function ProfilePage() {
   const fetchEducationHistory = async () => {
     setLoadingEducationHistory(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history`, {
-        credentials: "include",
-      });
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history`);
 
       if (res.ok) {
         const data = await res.json();
@@ -542,9 +534,8 @@ export default function ProfilePage() {
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history/${id}`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
 
       if (res.ok) {
@@ -569,9 +560,8 @@ export default function ProfilePage() {
         ? "Present" 
         : `${educationFormData.endMonth} ${educationFormData.endYear}`;
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -625,9 +615,8 @@ export default function ProfilePage() {
         ? "Present" 
         : `${educationFormData.endMonth} ${educationFormData.endYear}`;
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history/${editingEducationId}`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/education_history/${editingEducationId}`, {
         method: "PUT",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -676,8 +665,7 @@ export default function ProfilePage() {
   const fetchDiscordIntegration = async () => {
     setLoadingDiscord(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/discord`, {
-        credentials: "include",
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/discord`, {
       });
 
       if (res.ok) {
@@ -701,9 +689,8 @@ export default function ProfilePage() {
 
   const handleVerifyDiscord = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/discord/verify`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/discord/verify`, {
         method: "POST",
-        credentials: "include",
       });
 
       if (res.ok) {
@@ -731,8 +718,7 @@ export default function ProfilePage() {
   const fetchGithubIntegration = async () => {
     setLoadingGithub(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/github`, {
-        credentials: "include",
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/github`, {
       });
 
       if (res.ok) {
@@ -760,8 +746,7 @@ export default function ProfilePage() {
   const fetchLinkedinIntegration = async () => {
     setLoadingLinkedin(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin`, {
-        credentials: "include",
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin`, {
       });
 
       if (res.ok) {
@@ -789,9 +774,8 @@ export default function ProfilePage() {
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin`, {
         method: "DELETE",
-        credentials: "include",
       });
 
       if (res.ok) {
@@ -816,9 +800,8 @@ export default function ProfilePage() {
 
     setSavingLinkedInUrl(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin/url`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/linkedin/url`, {
         method: "PUT",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -865,9 +848,8 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/resume`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/resume`, {
         method: "POST",
-        credentials: "include",
         body: formData,
       });
 
@@ -897,9 +879,8 @@ export default function ProfilePage() {
 
     setDeletingResume(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/resume`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/resume`, {
         method: "DELETE",
-        credentials: "include",
       });
 
       if (res.ok) {
@@ -923,8 +904,7 @@ export default function ProfilePage() {
     // Fetch user's repositories
     setLoadingRepos(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/github/repos`, {
-        credentials: "include",
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/github/repos`, {
       });
 
       if (res.ok) {
@@ -957,9 +937,8 @@ export default function ProfilePage() {
   const handleSaveRepos = async () => {
     setSavingRepos(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/github/repos`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/integrations/github/repos`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -1065,9 +1044,8 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append("file", croppedBlob, "profile-photo.jpg");
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/picture`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/picture`, {
         method: "POST",
-        credentials: "include",
         body: formData,
       });
 
@@ -1098,9 +1076,8 @@ export default function ProfilePage() {
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me`, {
         method: "PUT",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { authenticatedFetch } from "@/lib/auth";
 import Image from "next/image";
 
 interface Offer {
@@ -64,8 +65,7 @@ export default function Offers() {
   const fetchOffers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/offers`, {
-        credentials: "include",
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/offers`, {
       });
 
       if (res.status === 401) {
@@ -175,9 +175,8 @@ export default function Offers() {
       
       const monthlyRate = calculateMonthlyRate(hourlyRate);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/offers`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/offers`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },

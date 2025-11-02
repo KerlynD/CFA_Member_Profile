@@ -99,8 +99,8 @@ func GoogleCallback(c *fiber.Ctx) error {
 		Value:    jwtToken,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HTTPOnly: true,
-		Secure:   false,
-		SameSite: "Lax",
+		Secure:   true,   // Required for SameSite=None
+		SameSite: "None", // Required for cross-domain cookies (Vercel <-> Railway)
 	})
 
 	// Redirect to the frontend
@@ -121,8 +121,8 @@ func Logout(c *fiber.Ctx) error {
 		Value:    "",
 		Expires:  time.Now().Add(-time.Hour),
 		HTTPOnly: true,
-		Secure:   false,
-		SameSite: "Lax",
+		Secure:   true,
+		SameSite: "None",
 	})
 	return c.JSON(fiber.Map{"message": "Logged out successfully"})
 }

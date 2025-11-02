@@ -10,18 +10,26 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     const token = searchParams.get("token");
+    
+    console.log("🔍 Auth callback - URL:", window.location.href);
+    console.log("🔍 Auth callback - Token present:", !!token);
+    console.log("🔍 Auth callback - Token length:", token?.length || 0);
 
     if (token) {
       // Store the JWT token in localStorage
       // This will be sent in the Authorization header for API requests
       setToken(token);
+      
+      // Verify it was stored
+      console.log("✅ Token stored in localStorage");
+      console.log("🔍 Verification - Token in localStorage:", localStorage.getItem("session_token") ? "Yes" : "No");
 
       // Redirect to dashboard after setting the token
-      console.log("✅ Token stored successfully, redirecting to dashboard");
+      console.log("🔄 Redirecting to dashboard...");
       router.push("/dashboard");
     } else {
       // If no token, redirect to login
-      console.error("No token found in callback URL");
+      console.error("❌ No token found in callback URL");
       router.push("/login");
     }
   }, [searchParams, router]);

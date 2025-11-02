@@ -34,7 +34,8 @@ func main() {
 	if frontendURL == "" {
 		frontendURL = "http://localhost:3000"
 	}
-	allowedOrigins := frontendURL + ", https://cfa-member-profile.vercel.app"
+	// Note: CORS AllowOrigins should be comma-separated without spaces
+	allowedOrigins := frontendURL + ",https://cfa-member-profile.vercel.app"
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,

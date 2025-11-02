@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { authenticatedFetch } from "@/lib/auth";
 
 type User = {
   id: number;
@@ -40,7 +41,7 @@ export default function DashboardPage() {
     const fetchUserData = async () => {
       try {
         // Check authentication and get user info
-        const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, { credentials: "include" });
+        const userResponse = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`);
         if (userResponse.status === 401) {
           router.push("/login");
           return;
@@ -51,14 +52,14 @@ export default function DashboardPage() {
           setUser(userData);
           
           // Fetch user's events
-          const eventsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userData.id}/events`, { credentials: "include" });
+          const eventsResponse = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userData.id}/events`);
           if (eventsResponse.ok) {
             const eventsData = await eventsResponse.json();
             setUserEvents(eventsData);
           }
 
           // Fetch upcoming events
-          const upcomingResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events`, { credentials: "include" });
+          const upcomingResponse = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events`);
           if (upcomingResponse.ok) {
             const allEvents = await upcomingResponse.json();
             const now = new Date();

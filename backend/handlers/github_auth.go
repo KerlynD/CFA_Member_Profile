@@ -57,8 +57,13 @@ func GithubCallback(c *fiber.Ctx) error {
 	code := c.Query("code")
 	state := c.Query("state")
 
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+
 	if code == "" {
-		return c.Redirect("http://localhost:3000/dashboard/profile?error=github_auth_failed")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=github_auth_failed")
 	}
 
 	// Exchange code for access token
@@ -73,7 +78,7 @@ func GithubCallback(c *fiber.Ctx) error {
 
 	req, err := http.NewRequest("POST", tokenURL, nil)
 	if err != nil {
-		return c.Redirect("http://localhost:3000/dashboard/profile?error=github_auth_failed")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=github_auth_failed")
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -83,7 +88,7 @@ func GithubCallback(c *fiber.Ctx) error {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return c.Redirect("http://localhost:3000/dashboard/profile?error=github_auth_failed")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=github_auth_failed")
 	}
 	defer resp.Body.Close()
 
@@ -94,24 +99,24 @@ func GithubCallback(c *fiber.Ctx) error {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
-		return c.Redirect("http://localhost:3000/dashboard/profile?error=github_auth_failed")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=github_auth_failed")
 	}
 
 	if tokenResponse.AccessToken == "" {
-		return c.Redirect("http://localhost:3000/dashboard/profile?error=github_auth_failed")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=github_auth_failed")
 	}
 
 	// Fetch GitHub user info
 	userReq, err := http.NewRequest("GET", "https://api.github.com/user", nil)
 	if err != nil {
-		return c.Redirect("http://localhost:3000/dashboard/profile?error=github_auth_failed")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=github_auth_failed")
 	}
 	userReq.Header.Set("Authorization", "Bearer "+tokenResponse.AccessToken)
 	userReq.Header.Set("Accept", "application/json")
 
 	userResp, err := client.Do(userReq)
 	if err != nil {
-		return c.Redirect("http://localhost:3000/dashboard/profile?error=github_auth_failed")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=github_auth_failed")
 	}
 	defer userResp.Body.Close()
 
@@ -123,7 +128,7 @@ func GithubCallback(c *fiber.Ctx) error {
 	}
 
 	if err := json.NewDecoder(userResp.Body).Decode(&githubUser); err != nil {
-		return c.Redirect("http://localhost:3000/dashboard/profile?error=github_auth_failed")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=github_auth_failed")
 	}
 
 	// Save to database
@@ -150,11 +155,11 @@ func GithubCallback(c *fiber.Ctx) error {
 
 	if err != nil {
 		fmt.Printf("Error saving GitHub integration: %v\n", err)
-		return c.Redirect("http://localhost:3000/dashboard/profile?error=github_save_failed")
+		return c.Redirect(frontendURL + "/dashboard/profile?error=github_save_failed")
 	}
 
 	// Redirect to profile with success
-	return c.Redirect("http://localhost:3000/dashboard/profile?github_connected=true&tab=integrations")
+	return c.Redirect(frontendURL + "/dashboard/profile?github_connected=true&tab=integrations")
 }
 
 // GET /api/integrations/github

@@ -295,7 +295,11 @@ func LinkedInIntegrationCallback(c *fiber.Ctx) error {
 	}
 
 	// Redirect to profile page with success message
-	return c.Redirect("http://localhost:3000/dashboard/profile?tab=integrations&linkedin_connected=true")
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+	return c.Redirect(frontendURL + "/dashboard/profile?tab=integrations&linkedin_connected=true")
 }
 
 // GetLinkedInIntegration gets the current user's LinkedIn integration

@@ -43,7 +43,7 @@ export default function Sidebar() {
 
     const handleLogout = async () => {
         try {
-            const response = await fetch("http://localhost:8080/api/logout", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/logout`, {
                 method: "GET",
                 credentials: "include",
             });

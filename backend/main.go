@@ -29,9 +29,15 @@ func main() {
 
 	app := fiber.New()
 
-	// CORS
+	// CORS - Allow frontend origins
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+	allowedOrigins := frontendURL + ", https://cfa-member-profile.vercel.app"
+
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "https://cfa-member-profile.vercel.app, http://localhost:3000",
+		AllowOrigins:     allowedOrigins,
 		AllowCredentials: true,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 	}))

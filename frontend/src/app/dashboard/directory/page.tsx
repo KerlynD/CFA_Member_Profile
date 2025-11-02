@@ -97,7 +97,7 @@ const ProfileImage = ({ src, alt, className }: { src: string; alt: string; class
 /*----------------API Functions----------*/
 const fetchUsers = async (): Promise<User[]> => {
     try {
-        const response = await fetch('/api/users');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, { credentials: "include" });
         if (!response.ok) {
             throw new Error('Failed to fetch users');
         }

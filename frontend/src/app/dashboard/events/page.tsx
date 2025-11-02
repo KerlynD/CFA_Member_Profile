@@ -52,7 +52,7 @@ export default function Events() {
 
   const fetchCurrentUser = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/me", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
         credentials: "include",
       });
 
@@ -67,7 +67,7 @@ export default function Events() {
 
   const fetchAttendees = async (eventId: number) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/events/${eventId}/attendees`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events/${eventId}/attendees`, {
         credentials: "include",
       });
 
@@ -86,7 +86,7 @@ export default function Events() {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/events", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events`, {
         credentials: "include",
       });
 
@@ -117,7 +117,7 @@ export default function Events() {
 
   const handleRegister = async (eventId: number) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/events/${eventId}/register`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events/${eventId}/register`, {
         method: "POST",
         credentials: "include",
       });
@@ -137,7 +137,7 @@ export default function Events() {
 
   const handleUnregister = async (eventId: number) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/events/${eventId}/register`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events/${eventId}/register`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -163,7 +163,7 @@ export default function Events() {
 
     setSavingEvent(true);
     try {
-      const res = await fetch("http://localhost:8080/api/admin/events", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -230,7 +230,7 @@ export default function Events() {
 
     setSavingEvent(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/admin/events/${selectedEvent.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events/${selectedEvent.id}`, {
         method: "PUT",
         credentials: "include",
         headers: {
@@ -278,7 +278,7 @@ export default function Events() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8080/api/admin/events/${eventId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events/${eventId}`, {
         method: "DELETE",
         credentials: "include",
       });

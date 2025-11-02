@@ -9,7 +9,7 @@ export default function LoginPage() {
     setIsAuthenticating(true);
     // Small delay to show the animation before redirect
     setTimeout(() => {
-      window.location.href = "http://localhost:8080/api/auth/google/login";
+      window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google/login`;
     }, 800);
   };
 

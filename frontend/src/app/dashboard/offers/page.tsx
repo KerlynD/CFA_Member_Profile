@@ -64,7 +64,7 @@ export default function Offers() {
   const fetchOffers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/offers", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/offers`, {
         credentials: "include",
       });
 
@@ -175,7 +175,7 @@ export default function Offers() {
       
       const monthlyRate = calculateMonthlyRate(hourlyRate);
 
-      const res = await fetch("http://localhost:8080/api/offers", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/offers`, {
         method: "POST",
         credentials: "include",
         headers: {

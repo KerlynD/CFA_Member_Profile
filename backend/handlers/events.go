@@ -19,7 +19,7 @@ func GetEvents(c *fiber.Ctx) error {
 
 	// Try to get the current user (optional, as this endpoint might be public)
 	var currentUserID int
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token != "" {
 		claims, err := utils.VerifyJWT(token)
 		if err == nil {
@@ -99,7 +99,7 @@ func RegisterForEvent(c *fiber.Ctx) error {
 	/*
 		Registers the current user for an event
 	*/
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",
@@ -148,7 +148,7 @@ func UnregisterFromEvent(c *fiber.Ctx) error {
 	/*
 		Unregisters the current user from an event
 	*/
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",

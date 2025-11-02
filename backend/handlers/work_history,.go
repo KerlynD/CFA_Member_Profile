@@ -18,7 +18,7 @@ func GetWorkHistory(c *fiber.Ctx) error {
 	*/
 
 	// Get & Verify JWT
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",
@@ -66,7 +66,7 @@ func AddWorkHistory(c *fiber.Ctx) error {
 	*/
 
 	// Get & Verify JWT
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",
@@ -111,7 +111,7 @@ func UpdateWorkHistory(c *fiber.Ctx) error {
 	*/
 
 	// Get & Verify JWT
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",
@@ -165,7 +165,7 @@ func DeleteWorkHistory(c *fiber.Ctx) error {
 	*/
 
 	// Get & Verify JWT
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",

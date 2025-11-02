@@ -20,7 +20,7 @@ func UploadResume(c *fiber.Ctx) error {
 	*/
 
 	// Get & Verify JWT
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",
@@ -97,7 +97,7 @@ func UploadResume(c *fiber.Ctx) error {
 
 func DeleteResume(c *fiber.Ctx) error {
 	// Get & Verify JWT
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",

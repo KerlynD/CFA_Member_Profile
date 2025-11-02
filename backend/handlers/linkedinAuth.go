@@ -222,7 +222,7 @@ func LinkedInIntegrationCallback(c *fiber.Ctx) error {
 	}
 
 	// Get & Verify JWT first (user must be logged in to integrate)
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).SendString("Must be logged in to connect LinkedIn")
 	}
@@ -305,7 +305,7 @@ func LinkedInIntegrationCallback(c *fiber.Ctx) error {
 // GetLinkedInIntegration gets the current user's LinkedIn integration
 func GetLinkedInIntegration(c *fiber.Ctx) error {
 	// Get & Verify JWT
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",
@@ -354,7 +354,7 @@ func GetLinkedInIntegration(c *fiber.Ctx) error {
 // DisconnectLinkedIn removes the LinkedIn integration for the current user
 func DisconnectLinkedIn(c *fiber.Ctx) error {
 	// Get & Verify JWT
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",
@@ -390,7 +390,7 @@ func DisconnectLinkedIn(c *fiber.Ctx) error {
 // UpdateLinkedInProfileURL allows users to update their LinkedIn profile URL
 func UpdateLinkedInProfileURL(c *fiber.Ctx) error {
 	// Get & Verify JWT
-	token := c.Cookies("session")
+	token := utils.GetTokenFromRequest(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",

@@ -34,7 +34,8 @@ func InitGithubOAuth() {
 // GET /api/auth/github/login
 func GithubLogin(c *fiber.Ctx) error {
 	// Verify user is authenticated
-	claims, err := utils.VerifyJWT(c.Cookies("session"))
+	token := utils.GetTokenFromRequest(c)
+	claims, err := utils.VerifyJWT(token)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
@@ -164,7 +165,8 @@ func GithubCallback(c *fiber.Ctx) error {
 
 // GET /api/integrations/github
 func GetGithubIntegration(c *fiber.Ctx) error {
-	claims, err := utils.VerifyJWT(c.Cookies("session"))
+	token := utils.GetTokenFromRequest(c)
+	claims, err := utils.VerifyJWT(token)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
@@ -194,7 +196,8 @@ func GetGithubIntegration(c *fiber.Ctx) error {
 
 // GET /api/integrations/github/repos
 func GetGithubRepos(c *fiber.Ctx) error {
-	claims, err := utils.VerifyJWT(c.Cookies("session"))
+	token := utils.GetTokenFromRequest(c)
+	claims, err := utils.VerifyJWT(token)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
@@ -246,7 +249,8 @@ func GetGithubRepos(c *fiber.Ctx) error {
 // POST /api/integrations/github/repos
 // Body: { "repos": ["owner/repo1", "owner/repo2", "owner/repo3"] }
 func SaveTopRepos(c *fiber.Ctx) error {
-	claims, err := utils.VerifyJWT(c.Cookies("session"))
+	token := utils.GetTokenFromRequest(c)
+	claims, err := utils.VerifyJWT(token)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}

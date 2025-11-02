@@ -3,14 +3,16 @@ package utils
 import (
 	"os"
 	"time"
+
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 // Claims Struct (gonna be encoded into a JWT)
 type Claims struct {
-	UserID int `json:"user_id"`
-	Email string `json:"email"`
-	IsAdmin bool `json:"is_admin"`
+	UserID  int    `json:"user_id"`
+	Email   string `json:"email"`
+	IsAdmin bool   `json:"is_admin"`
 	jwt.RegisteredClaims
 }
 
@@ -21,8 +23,8 @@ func GenerateJWT(userID int, email string, isAdmin bool) (string, error) {
 		Returns the JWT and an error if it fails
 	*/
 	claims := &Claims{
-		UserID: userID,
-		Email: email,
+		UserID:  userID,
+		Email:   email,
 		IsAdmin: isAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)), // Always expires in 24 hours
@@ -57,4 +59,27 @@ func VerifyJWT(tokenString string) (*Claims, error) {
 	}
 
 	return nil, err
+}
+
+// GetTokenFromRequest extracts JWT token from Authorization header or session cookie
+func GetTokenFromRequest(c *fiber.Ctx) string {
+	/*
+		Helper function to extract JWT token from either:
+		1. Authorization header (Bearer token) - preferred for cross-domain
+		2. Session cookie - fallback for same-domain
+		Returns empty string if no token found
+	*/
+
+	// Check Authorization header first
+	token := c.Get("Authorization")
+	if token != "" {
+		// Remove "Bearer " prefix if present
+		if len(token) > 7 && token[:7] == "Bearer " {
+			return token[7:]
+		}
+		return token
+	}
+
+	// Fallback to session cookie
+	return c.Cookies("session")
 }

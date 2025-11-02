@@ -49,7 +49,8 @@ func GetDiscordIntegration(c *fiber.Ctx) error {
 		Gets the Discord integration for the current user
 		Returns a JSON object of the Discord integration
 	*/
-	claims, err := utils.VerifyJWT(c.Cookies("session"))
+	token := utils.GetTokenFromRequest(c)
+	claims, err := utils.VerifyJWT(token)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized/No JWT found"})
 	}
@@ -182,7 +183,8 @@ func VerifyDiscordMembership(c *fiber.Ctx) error {
 		Manually triggers verification check for the current user's Discord integration
 		Updates the verified status in the database
 	*/
-	claims, err := utils.VerifyJWT(c.Cookies("session"))
+	token := utils.GetTokenFromRequest(c)
+	claims, err := utils.VerifyJWT(token)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized/No JWT found"})
 	}

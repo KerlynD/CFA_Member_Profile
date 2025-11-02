@@ -31,7 +31,7 @@ func main() {
 
 	// CORS
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000",
+		AllowOrigins:     "https://cfa-member-profile.vercel.app, http://localhost:3000",
 		AllowCredentials: true,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 	}))

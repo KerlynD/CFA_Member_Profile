@@ -113,7 +113,7 @@ func DiscordCallback(c *fiber.Ctx) error {
 		Redirects to the frontend
 	*/
 	code := c.Query("code")
-	token, err := discordOAuthConfig.Exchange(context.Background(), code)
+	oauthToken, err := discordOAuthConfig.Exchange(context.Background(), code)
 
 	if err != nil {
 		return c.Status(500).SendString("Failed to exchange authorization code for token: " + err.Error())
@@ -121,7 +121,7 @@ func DiscordCallback(c *fiber.Ctx) error {
 
 	// GET user info from Discord
 	request, _ := http.NewRequest("GET", "https://discord.com/api/v10/users/@me", nil)
-	request.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	request.Header.Set("Authorization", "Bearer "+oauthToken.AccessToken)
 
 	response, err := http.DefaultClient.Do(request)
 
@@ -141,14 +141,14 @@ func DiscordCallback(c *fiber.Ctx) error {
 	avatarURL := fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png", discordID, avatarHash)
 
 	// Get & Verify JWT
-	cookie := c.Cookies("session")
-	if cookie == "" {
+	jwtToken := utils.GetTokenFromRequest(c)
+	if jwtToken == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized/No JWT found",
 		})
 	}
 
-	claims, err := utils.VerifyJWT(cookie)
+	claims, err := utils.VerifyJWT(jwtToken)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Expired/Invalid JWT",

@@ -1334,7 +1334,7 @@ export default function ProfilePage() {
                     Current Location <span className="text-red-500">*</span>
                   </label>
                   <p className="text-sm text-gray-500 mb-2">
-                    We&apos;ll use this to connect you to ColorStack members and events in your area.
+                    We&apos;ll use this to connect you to Code for All members and events in your area.
                   </p>
                   <input
                     type="text"

@@ -93,21 +93,26 @@ func GoogleCallback(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to create JWT")
 	}
 
-	// Send JWT as cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "session",
-		Value:    jwtToken,
-		Expires:  time.Now().Add(24 * time.Hour),
-		HTTPOnly: true,
-		Secure:   true,   // Required for SameSite=None
-		SameSite: "None", // Required for cross-domain cookies (Vercel <-> Railway)
-	})
-
 	// Redirect to the frontend
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
 		frontendURL = "http://localhost:3000"
 	}
+
+	// Send JWT as cookie
+	c.Cookie(&fiber.Cookie{
+		Name:     "session",
+		Value:    jwtToken,
+		Path:     "/",
+		Expires:  time.Now().Add(24 * time.Hour),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: "None",
+	})
+
+	// Log for debugging
+	log.Printf("✅ Cookie set for user %s (ID: %d). Redirecting to %s", email, userID, frontendURL+"/dashboard")
+
 	return c.Redirect(frontendURL + "/dashboard")
 }
 
@@ -119,6 +124,7 @@ func Logout(c *fiber.Ctx) error {
 	c.Cookie(&fiber.Cookie{
 		Name:     "session",
 		Value:    "",
+		Path:     "/",
 		Expires:  time.Now().Add(-time.Hour),
 		HTTPOnly: true,
 		Secure:   true,

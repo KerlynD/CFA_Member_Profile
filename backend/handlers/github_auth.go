@@ -40,7 +40,7 @@ func GithubLogin(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
-	// Store user ID in session for callback
+	// Store user ID in state parameter to pass through OAuth flow
 	state := fmt.Sprintf("%d", claims.UserID)
 
 	// Only request read access to public repos and user email
@@ -51,7 +51,8 @@ func GithubLogin(c *fiber.Ctx) error {
 		state,
 	)
 
-	return c.Redirect(redirectURL)
+	// Return the redirect URL as JSON for frontend to handle
+	return c.JSON(fiber.Map{"redirect_url": redirectURL})
 }
 
 // GET /api/auth/github/callback

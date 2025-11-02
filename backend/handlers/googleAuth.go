@@ -93,27 +93,18 @@ func GoogleCallback(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to create JWT")
 	}
 
-	// Redirect to the frontend
+	// Redirect to the frontend with JWT token as URL parameter
+	// The frontend will extract the token and store it as a cookie on its domain
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
 		frontendURL = "http://localhost:3000"
 	}
 
-	// Send JWT as cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "session",
-		Value:    jwtToken,
-		Path:     "/",
-		Expires:  time.Now().Add(24 * time.Hour),
-		HTTPOnly: true,
-		Secure:   true,
-		SameSite: "None",
-	})
-
 	// Log for debugging
-	log.Printf("✅ Cookie set for user %s (ID: %d). Redirecting to %s", email, userID, frontendURL+"/dashboard")
+	log.Printf("✅ JWT generated for user %s (ID: %d). Redirecting to %s", email, userID, frontendURL+"/auth/callback")
 
-	return c.Redirect(frontendURL + "/dashboard")
+	// Redirect to frontend callback page with token as query parameter
+	return c.Redirect(frontendURL + "/auth/callback?token=" + jwtToken)
 }
 
 func Logout(c *fiber.Ctx) error {

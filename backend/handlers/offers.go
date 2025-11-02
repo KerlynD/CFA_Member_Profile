@@ -70,6 +70,21 @@ func AddOffer(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body/JSON"})
 	}
 
+	// Validate hourly rate
+	maxHourlyRate := 200.0
+	if body.OfferType == "full-time" {
+		maxHourlyRate = 480.0 // ~$1M/year
+	}
+
+	if body.HourlyRate <= 0 {
+		return c.Status(400).JSON(fiber.Map{"error": "Hourly rate must be greater than 0"})
+	}
+	if body.HourlyRate > maxHourlyRate {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Hourly rate exceeds maximum allowed value",
+		})
+	}
+
 	// Generate company logo URL using logo.dev
 	companyLogo := getCompanyLogoURL(body.Company)
 

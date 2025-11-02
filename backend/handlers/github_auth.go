@@ -43,8 +43,9 @@ func GithubLogin(c *fiber.Ctx) error {
 	// Store user ID in session for callback
 	state := fmt.Sprintf("%d", claims.UserID)
 
+	// Only request read access to public repos and user email
 	redirectURL := fmt.Sprintf(
-		"https://github.com/login/oauth/authorize?client_id=%s&redirect_uri=%s&scope=read:user user:email repo&state=%s",
+		"https://github.com/login/oauth/authorize?client_id=%s&redirect_uri=%s&scope=read:user user:email public_repo&state=%s",
 		githubClientID,
 		githubRedirectURL,
 		state,

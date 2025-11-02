@@ -166,11 +166,24 @@ export default function Offers() {
       let hourlyRate: number;
       
       if (formData.offerType === "full-time" && formData.yearlySalary) {
+        const yearlySalary = parseFloat(formData.yearlySalary);
+        // Validate yearly salary (max $1M)
+        if (yearlySalary > 1000000) {
+          alert("Yearly salary cannot exceed $1,000,000");
+          setSavingOffer(false);
+          return;
+        }
         // Calculate hourly rate from yearly salary
-        hourlyRate = calculateHourlyFromYearly(parseFloat(formData.yearlySalary));
+        hourlyRate = calculateHourlyFromYearly(yearlySalary);
       } else {
         // Use hourly rate directly
         hourlyRate = parseFloat(formData.hourlyRate);
+        // Validate hourly rate (max $200 for internships)
+        if (formData.offerType === "internship" && hourlyRate > 200) {
+          alert("Hourly rate for internships cannot exceed $200/hr");
+          setSavingOffer(false);
+          return;
+        }
       }
       
       const monthlyRate = calculateMonthlyRate(hourlyRate);
@@ -448,12 +461,14 @@ export default function Offers() {
                     type="number"
                     id="hourlyRate"
                     step="0.01"
+                    min="0"
+                    max="200"
                     value={formData.hourlyRate}
                     onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value, yearlySalary: "" })}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
                     placeholder="Hourly Rate"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Monthly rate will be auto-calculated (40 hrs/week × 4.33 weeks/month)</p>
+                  <p className="text-xs text-gray-500 mt-1">Max $200/hr. Monthly rate will be auto-calculated (40 hrs/week × 4.33 weeks/month)</p>
                 </div>
               ) : (
                 <div>
@@ -464,12 +479,14 @@ export default function Offers() {
                     type="number"
                     id="yearlySalary"
                     step="0.01"
+                    min="0"
+                    max="1000000"
                     value={formData.yearlySalary}
                     onChange={(e) => setFormData({ ...formData, yearlySalary: e.target.value, hourlyRate: "" })}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
                     placeholder="Yearly Salary"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Hourly and monthly rates will be auto-calculated (2080 hours/year)</p>
+                  <p className="text-xs text-gray-500 mt-1">Max $1,000,000/year. Hourly and monthly rates will be auto-calculated (2080 hours/year)</p>
                 </div>
               )}
 

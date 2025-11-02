@@ -14,7 +14,7 @@ require (
 require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/cloudinary/cloudinary-go/v2 v2.13.0 // indirect
+	github.com/cloudinary/cloudinary-go/v2 v2.13.0 // direct
 	github.com/creasty/defaults v1.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/schema v1.4.1 // indirect

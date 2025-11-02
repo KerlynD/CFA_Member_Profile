@@ -682,9 +682,25 @@ export default function ProfilePage() {
     }
   };
 
-  const handleConnectDiscord = () => {
-    // Redirect to Discord OAuth
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/discord/login`;
+  const handleConnectDiscord = async () => {
+    // Call the Discord login endpoint with authentication
+    // The backend will redirect to Discord OAuth with user ID in state
+    try {
+      const response = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/discord/login`);
+      
+      if (response.ok) {
+        // Backend returns redirect URL, navigate to it
+        const data = await response.json();
+        if (data.redirect_url) {
+          window.location.href = data.redirect_url;
+        }
+      } else {
+        alert("Failed to initiate Discord connection. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error connecting Discord:", error);
+      alert("Failed to connect Discord");
+    }
   };
 
   const handleVerifyDiscord = async () => {

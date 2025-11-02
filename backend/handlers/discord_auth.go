@@ -38,9 +38,25 @@ func InitDiscordOAuth() {
 }
 
 func DiscordLogin(c *fiber.Ctx) error {
-	// Redirect user to Discord Login
-	url := discordOAuthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
-	return c.Redirect(url)
+	// Verify user is authenticated first
+	jwtToken := utils.GetTokenFromRequest(c)
+	if jwtToken == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	claims, err := utils.VerifyJWT(jwtToken)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	// Store user ID in state parameter to pass through OAuth flow
+	state := fmt.Sprintf("%d", claims.UserID)
+
+	// Generate Discord OAuth URL with user ID in state
+	url := discordOAuthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
+
+	// Return the redirect URL as JSON for frontend to handle
+	return c.JSON(fiber.Map{"redirect_url": url})
 }
 
 // GET /api/integrations/discord
@@ -109,14 +125,27 @@ func DiscordCallback(c *fiber.Ctx) error {
 		Exchanges the authorization code for a token
 		Gets the user info from Discord
 		Creates/updates user in database
-		Generates a JWT and sets it as a cookie
 		Redirects to the frontend
 	*/
 	code := c.Query("code")
-	oauthToken, err := discordOAuthConfig.Exchange(context.Background(), code)
+	state := c.Query("state") // This contains the user ID
 
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+
+	if code == "" {
+		return c.Redirect(frontendURL + "/dashboard/profile?error=discord_auth_failed")
+	}
+
+	if state == "" {
+		return c.Redirect(frontendURL + "/dashboard/profile?error=discord_auth_failed")
+	}
+
+	oauthToken, err := discordOAuthConfig.Exchange(context.Background(), code)
 	if err != nil {
-		return c.Status(500).SendString("Failed to exchange authorization code for token: " + err.Error())
+		return c.Redirect(frontendURL + "/dashboard/profile?error=discord_auth_failed")
 	}
 
 	// GET user info from Discord
@@ -124,36 +153,23 @@ func DiscordCallback(c *fiber.Ctx) error {
 	request.Header.Set("Authorization", "Bearer "+oauthToken.AccessToken)
 
 	response, err := http.DefaultClient.Do(request)
-
 	if err != nil {
-		return c.Status(500).SendString("Failed to get user info from Discord: " + err.Error())
+		return c.Redirect(frontendURL + "/dashboard/profile?error=discord_auth_failed")
 	}
 	defer response.Body.Close()
 
 	var userData map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&userData)
 
-	// Extract
+	// Extract Discord user data
 	discordID := userData["id"].(string)
 	username := userData["username"].(string)
 	discriminator := userData["discriminator"].(string)
 	avatarHash := userData["avatar"].(string)
 	avatarURL := fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png", discordID, avatarHash)
 
-	// Get & Verify JWT
-	jwtToken := utils.GetTokenFromRequest(c)
-	if jwtToken == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized/No JWT found",
-		})
-	}
-
-	claims, err := utils.VerifyJWT(jwtToken)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Expired/Invalid JWT",
-		})
-	}
+	// Get user ID from state parameter (passed through OAuth flow)
+	userID := state
 
 	// Check if user is in the guild (verify membership)
 	isVerified := verifyDiscordMembership(discordID)
@@ -164,17 +180,15 @@ func DiscordCallback(c *fiber.Ctx) error {
 		 VALUES ($1, $2, $3, $4, $5, $6)
 		 ON CONFLICT (discord_id) 
 		 DO UPDATE SET username=$3, discriminator=$4, avatar_url=$5, verified=$6`,
-		claims.UserID, discordID, username, discriminator, avatarURL, isVerified)
+		userID, discordID, username, discriminator, avatarURL, isVerified)
 
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to save to database: " + err.Error()})
+		fmt.Printf("Error saving Discord integration: %v\n", err)
+		return c.Redirect(frontendURL + "/dashboard/profile?error=discord_save_failed")
 	}
 
-	frontendURL := os.Getenv("FRONTEND_URL")
-	if frontendURL == "" {
-		frontendURL = "http://localhost:3000"
-	}
-	return c.Redirect(frontendURL + "/dashboard/profile")
+	// Redirect to profile with success
+	return c.Redirect(frontendURL + "/dashboard/profile?tab=integrations")
 }
 
 // POST /api/integrations/discord/verify

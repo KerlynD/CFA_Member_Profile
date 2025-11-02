@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { authenticatedFetch } from "@/lib/auth";
 
 interface Event {
   id: number;
@@ -52,8 +53,7 @@ export default function Events() {
 
   const fetchCurrentUser = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
-        credentials: "include",
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
       });
 
       if (res.ok) {
@@ -67,8 +67,7 @@ export default function Events() {
 
   const fetchAttendees = async (eventId: number) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events/${eventId}/attendees`, {
-        credentials: "include",
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events/${eventId}/attendees`, {
       });
 
       if (res.ok) {
@@ -86,8 +85,7 @@ export default function Events() {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events`, {
-        credentials: "include",
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events`, {
       });
 
       if (res.status === 401) {
@@ -117,9 +115,8 @@ export default function Events() {
 
   const handleRegister = async (eventId: number) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events/${eventId}/register`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events/${eventId}/register`, {
         method: "POST",
-        credentials: "include",
       });
 
       if (res.ok) {
@@ -137,9 +134,8 @@ export default function Events() {
 
   const handleUnregister = async (eventId: number) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events/${eventId}/register`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events/${eventId}/register`, {
         method: "DELETE",
-        credentials: "include",
       });
 
       if (res.ok) {
@@ -163,9 +159,8 @@ export default function Events() {
 
     setSavingEvent(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -230,9 +225,8 @@ export default function Events() {
 
     setSavingEvent(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events/${selectedEvent.id}`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events/${selectedEvent.id}`, {
         method: "PUT",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -278,9 +272,8 @@ export default function Events() {
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events/${eventId}`, {
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events/${eventId}`, {
         method: "DELETE",
-        credentials: "include",
       });
 
       if (res.ok) {

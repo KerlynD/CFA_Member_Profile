@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { authenticatedFetch } from "@/lib/auth";
 
 type Submission = {
   title: string;
@@ -134,9 +135,7 @@ export default function LeetcodeLeaderboard() {
         }
 
         // Cache miss or expired - fetch fresh data
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/leetcode/lookup`, {
-          credentials: "include",
-        });
+        const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/leetcode/lookup`);
         const data = await res.json();
         setCard(data);
         

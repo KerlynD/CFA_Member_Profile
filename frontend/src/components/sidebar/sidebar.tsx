@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { removeToken } from "@/lib/auth";
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -43,18 +44,22 @@ export default function Sidebar() {
 
     const handleLogout = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/logout`, {
+            // Clear the token from localStorage
+            removeToken();
+            
+            // Optionally call the backend logout endpoint to clear server-side session
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/logout`, {
                 method: "GET",
-                credentials: "include",
+            }).catch(() => {
+                // Ignore errors from logout endpoint since we already cleared local token
             });
 
-            if (response.ok) {
-                router.push("/login");
-            } else {
-                console.error("Logout failed");
-            }
+            // Redirect to login
+            router.push("/login");
         } catch (error) {
             console.error("Error during logout:", error);
+            // Still redirect even if there's an error
+            router.push("/login");
         }
     };
 

@@ -40,6 +40,8 @@ func main() {
 		AllowOrigins:     allowedOrigins,
 		AllowCredentials: true,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		ExposeHeaders:    "Set-Cookie",
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 	}))
 
 	routes.RegisterRoutes(app)

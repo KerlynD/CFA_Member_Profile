@@ -180,12 +180,122 @@ export default function Directory() {
         setCurrentPage(1);
     }, [query, school, company, location]);
 
+    const content = (
+        <div className="space-y-6">
+            {/* Search + Filters */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <div className="flex-1 max-w-md">
+                    <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Search by name or email"
+                        className="w-full rounded-full border border-gray-300 bg-white px-4 py-2 outline-none focus:border-emerald-700"
+                    />
+                </div>
+                <div className="flex flex-row flex-wrap gap-3">
+                    <Select 
+                        className="w-48" 
+                        placeholder={<SchoolPlaceholder />}
+                        styles={customStyles} 
+                        options={schoolOptions} 
+                        onChange={(e) => setSchool(e)} 
+                        isClearable 
+                    />
+                    <Select 
+                        className="w-48" 
+                        placeholder={<CompanyPlaceholder />}
+                        styles={customStyles} 
+                        options={companyOptions} 
+                        onChange={(e) => setCompany(e)} 
+                        isClearable 
+                    />
+                    <Select 
+                        className="w-48" 
+                        placeholder={<LocationPlaceholder />}
+                        styles={customStyles} 
+                        options={locationOptions} 
+                        onChange={(e) => setLocation(e)} 
+                        isClearable 
+                    />
+                </div>
+            </div>
+
+            <div className="mb-4 text-sm text-gray-600">
+                Showing {currentUsers.length} of {filtered.length} members
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {currentUsers.map((u) => (
+                    <div 
+                        key={u.id} 
+                        className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => router.push(`/dashboard/profile/${u.id}`)}
+                    >
+                        <ProfileImage
+                            src={u.picture || ""}
+                            alt={u.name}
+                            className="h-12 w-12 rounded-full object-cover flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate mb-1">{u.name}</p>
+                            <p className="text-xs text-gray-600 line-clamp-2">{u.headline || "No headline provided"}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {totalPages > 1 && (
+                <div className="mt-8 flex justify-center items-center gap-2">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Previous
+                    </button>
+                    
+                    <div className="flex gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                                    currentPage === page
+                                        ? 'bg-emerald-600 text-white'
+                                        : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
+
+            {filtered.length === 0 && !loading && (
+                <div className="text-center py-12">
+                    <Image src="/nextjs/cry-svgrepo-com.svg" alt="No results" width={64} height={64} className="mx-auto mb-4 opacity-50" />
+                    <p className="text-lg text-gray-500 mb-2">No members found</p>
+                    <p className="text-sm text-gray-400">Try adjusting your search or filters</p>
+                </div>
+            )}
+        </div>
+    );
+
     if (loading) {
         return (
-            <div className="flex flex-col w-full">
-                <div className="flex flex-row w-full items-center">
-                    <h1 className="text-2xl mr-3">Directory</h1>
-                    <Image src="/assets/directory.svg" alt="" width={35} height={35} />
+            <div className="max-w-7xl mx-auto p-6">
+                <div className="flex items-center gap-3 mb-6">
+                    <h1 className="text-3xl font-bold text-gray-900">Directory</h1>
+                    <Image src="/assets/directory.svg" alt="Directory icon" width={40} height={40} />
                 </div>
                 <div className="flex justify-center items-center h-64">
                     <div className="text-lg text-gray-500">Loading members...</div>
@@ -195,125 +305,12 @@ export default function Directory() {
     }
 
     return (
-        <div className="flex flex-col w-full">
-            <div className="flex flex-row w-full items-center">
-                <h1 className="text-2xl mr-3">Directory</h1>
-                <Image src="/assets/directory.svg" alt="" width={35} height={35} />
+        <div className="max-w-7xl mx-auto p-6">
+            <div className="flex items-center gap-3 mb-6">
+                <h1 className="text-3xl font-bold text-gray-900">Directory</h1>
+                <Image src="/assets/directory.svg" alt="Directory icon" width={40} height={40} />
             </div>
-            <main className="mt-5">
-                {/* Top bar: search and filters side by side */}
-                <div className="mb-6 flex flex-col sm:flex-row gap-3 sm:items-center">
-                    {/* Search bar */}
-                    <div className="flex-1 max-w-md">
-                        <input
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search by name or email"
-                            className="w-full rounded-full border border-gray-300 bg-white px-4 py-2 outline-none focus:border-emerald-700"
-                        />
-                    </div>
-
-                    {/* Dropdowns next to search bar */}
-                    <div className="flex flex-row flex-wrap gap-3">
-                        <Select 
-                            className="w-48" 
-                            placeholder={<SchoolPlaceholder />}
-                            styles={customStyles} 
-                            options={schoolOptions} 
-                            onChange={(e) => setSchool(e)} 
-                            isClearable 
-                        />
-                        <Select 
-                            className="w-48" 
-                            placeholder={<CompanyPlaceholder />}
-                            styles={customStyles} 
-                            options={companyOptions} 
-                            onChange={(e) => setCompany(e)} 
-                            isClearable 
-                        />
-                        <Select 
-                            className="w-48" 
-                            placeholder={<LocationPlaceholder />}
-                            styles={customStyles} 
-                            options={locationOptions} 
-                            onChange={(e) => setLocation(e)} 
-                            isClearable 
-                        />
-                    </div>
-                </div>
-
-                {/* Results count */}
-                <div className="mb-4 text-sm text-gray-600">
-                    Showing {currentUsers.length} of {filtered.length} members
-                </div>
-
-                {/* User grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {currentUsers.map((u) => (
-                        <div 
-                            key={u.id} 
-                            className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                            onClick={() => router.push(`/dashboard/profile/${u.id}`)}
-                        >
-                            <ProfileImage
-                                src={u.picture || ""}
-                                alt={u.name}
-                                className="h-12 w-12 rounded-full object-cover flex-shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-900 truncate mb-1">{u.name}</p>
-                                <p className="text-xs text-gray-600 line-clamp-2">{u.headline || "No headline provided"}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="mt-8 flex justify-center items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Previous
-                        </button>
-                        
-                        <div className="flex gap-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                <button
-                                    key={page}
-                                    onClick={() => setCurrentPage(page)}
-                                    className={`px-3 py-2 rounded-md text-sm font-medium ${
-                                        currentPage === page
-                                            ? 'bg-emerald-600 text-white'
-                                            : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                                    }`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
-                        </div>
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
-
-                {/* Empty state */}
-                {filtered.length === 0 && !loading && (
-                    <div className="text-center py-12">
-                        <Image src="/nextjs/cry-svgrepo-com.svg" alt="No results" width={64} height={64} className="mx-auto mb-4 opacity-50" />
-                        <p className="text-lg text-gray-500 mb-2">No members found</p>
-                        <p className="text-sm text-gray-400">Try adjusting your search or filters</p>
-                    </div>
-                )}
-            </main>
+            {content}
         </div>
     );
 }

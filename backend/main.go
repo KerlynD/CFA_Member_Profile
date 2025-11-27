@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/KerlynD/CFA_Member_Profile/backend/db"
 	"github.com/KerlynD/CFA_Member_Profile/backend/handlers"
@@ -35,7 +36,10 @@ func main() {
 		frontendURL = "http://localhost:3000"
 	}
 	// Note: CORS AllowOrigins should be comma-separated without spaces
-	allowedOrigins := frontendURL + ",https://cfa-member-profile.vercel.app"
+	allowedOrigins := strings.Join([]string{
+		frontendURL,
+		"https://cfa-member-profile.vercel.app",
+	}, ",")
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,

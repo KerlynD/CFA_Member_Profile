@@ -6,6 +6,7 @@ import Image from "next/image";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import { authenticatedFetch } from "@/lib/auth";
+import { LocationSelect } from "@/components/location/location-select";
 
 interface User {
   id: number;
@@ -1376,23 +1377,11 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                {/* Current Location */}
-                <div>
-                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                    Current Location <span className="text-red-500">*</span>
-                  </label>
-                  <p className="text-sm text-gray-500 mb-2">
-                    We&apos;ll use this to connect you to Code for All members and events in your area.
-                  </p>
-                  <input
-                    type="text"
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                    placeholder="New York, NY, USA"
-                  />
-                </div>
+                <LocationSelect
+                  value={formData.location}
+                  onChange={(location) => setFormData({ ...formData, location })}
+                  required
+                />
               </div>
 
               {/* Success Message */}

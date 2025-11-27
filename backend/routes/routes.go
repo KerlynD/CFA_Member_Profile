@@ -82,6 +82,9 @@ func RegisterRoutes(app *fiber.App) {
 	auth.Delete("/integrations/linkedin", handlers.DisconnectLinkedIn)
 	auth.Put("/integrations/linkedin/url", handlers.UpdateLinkedInProfileURL)
 
+	// Location search (GeoDB)
+	auth.Get("/locations/search", handlers.SearchLocations)
+
 	// Work History
 	auth.Post("/work_history", handlers.AddWorkHistory)
 	auth.Get("/work_history", handlers.GetWorkHistory)
